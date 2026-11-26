@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一泊2日 旅のプラン＆パンフレット作成ツール</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* メイリオ優先のフォント設定 */
+        body, input, select, textarea, button {
+            font-family: "Meiryo", "メイリオ", "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", "MS PGothic", sans-serif;
+        }
+
+        /* 季節ごとの配色（#brochure に .season-* を付けて切り替える）
+           --main: 濃い色 / --soft: 薄い背景 / --ink: 濃い文字色 / --sub: 2日目の色 / --bg: 地のグラデーション */
+        .season-spring {
+            --main: #c2185b; --soft: #fce4ec; --ink: #5a1832; --sub: #7b1fa2; --sub-soft: #f3e5f5;
+            --bar: #4a2c35; --bg: linear-gradient(135deg, #fff 0%, #fff 55%, #fce4ec 100%);
+        }
+        .season-summer {
+            --main: #00796b; --soft: #e0f2f1; --ink: #0f3d3a; --sub: #0277bd; --sub-soft: #e1f5fe;
+            --bar: #1b4d4f; --bg: linear-gradient(135deg, #fff 0%, #fff 55%, #e0f2f1 100%);
+        }
+        .season-autumn {
+            --main: #c2410c; --soft: #ffedd5; --ink: #5a260a; --sub: #8d6e00; --sub-soft: #fff8e1;
+            --bar: #4e2a14; --bg: linear-gradient(135deg, #fff 0%, #fff 55%, #fff3e0 100%);
+        }
+        .season-winter {
+            --main: #3949ab; --soft: #e8eaf6; --ink: #1a237e; --sub: #00838f; --sub-soft: #e0f7fa;
+            --bar: #1a237e; --bg: linear-gradient(135deg, #fff 0%, #fff 55%, #e8eaf6 100%);
+        }
+        #brochure { background: var(--bg); }
+        .th-badge { background: var(--main); color: #fff; }
+        .th-bar { background: var(--bar); }
+        .th-icon { color: var(--soft); }
+        .th-line1 { border-color: var(--main); }
+        .th-dot1 { background: var(--main); }
+        .th-chip1 { background: var(--soft); color: var(--ink); }
+        .th-line2 { border-color: var(--sub); }
+        .th-dot2 { background: var(--sub); }
+        .th-chip2 { background: var(--sub-soft); color: var(--ink); }
+        .th-memo { background: var(--soft); border-color: var(--main); }
+        .th-memo-title { color: var(--ink); }
+
+        /* ===== 入力フォーム（大きく・はっきり） ===== */
+        .f-section { font-size: 20px; font-weight: 700; color: #0f172a; display: flex; align-items: center; }
+        .f-help { font-size: 16px; color: #334155; line-height: 1.6; }
+        .f-label { display: block; font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+        .f-input {
+            width: 100%; min-height: 50px; padding: 10px 14px; font-size: 18px; line-height: 1.5;
+            color: #0f172a; background: #fff; border: 2px solid #94a3b8; border-radius: 10px;
+        }
+        .f-input::placeholder { color: #64748b; }
+        .f-input:focus { outline: 3px solid #f59e0b; outline-offset: 1px; border-color: #b45309; }
+        textarea.f-input { min-height: 80px; }
+        .btn-sub {
+            display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 18px;
+            font-size: 17px; font-weight: 700; color: #0c4a6e; background: #fff;
+            border: 2px solid #0369a1; border-radius: 999px; cursor: pointer;
+        }
+        .btn-sub:hover { background: #e0f2fe; }
+        .btn-sub:disabled { opacity: .45; cursor: not-allowed; }
+        .btn-sub:focus-visible, .btn-icon:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+        .btn-icon {
+            display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 50px; height: 50px; font-size: 20px; border: 2px solid #94a3b8; border-radius: 10px;
+            background: #fff; color: #334155; cursor: pointer;
+        }
+        .btn-icon:hover { background: #f1f5f9; }
+
+
+        .slot-form { background: #fff; border: 2px solid #cbd5e1; border-radius: 12px; padding: 14px; }
+        .slot-form .slot-name { font-size: 18px; font-weight: 700; color: #0f172a; }
+        .day-form { padding: 14px; border-radius: 14px; background: #f8fafc; border: 2px solid #e2e8f0; }
+
+        /* ===== パンフレット本文 ===== */
+        .b-head { font-size: 18px; font-weight: 700; }
+        .b-text { font-size: 16px; line-height: 1.6; }
+        .b-small { font-size: 16px; line-height: 1.5; }
+        .b-slot { background: rgba(255,255,255,.85); border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; }
+        .b-slot-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+        .b-chip { font-size: 15px; font-weight: 700; padding: 2px 10px; border-radius: 6px; }
+        .b-plan { font-size: 16px; font-weight: 700; color: #1e293b; line-height: 1.55; margin-top: 4px; }
+        .b-note { font-size: 16px; color: #334155; line-height: 1.55; margin-top: 4px; padding-left: 10px; border-left: 3px solid #cbd5e1; }
+        .b-msg { font-size: 16px; line-height: 1.6; color: #1e293b; }
+        .b-msg-name { font-weight: 700; }
+        .b-tagline { font-size: 18px; line-height: 1.5; }
+        .b-day-title { font-size: 20px; line-height: 1.4; }
+        .b-photo-label { font-size: 15px; font-weight: 700; }
+        .b-pace { display: inline-flex; align-items: center; gap: 4px; padding: 2px 12px; border-radius: 999px; background: #ecfdf5; color: #065f46; border: 1.5px solid #34d399; }
+        html.print-mode .b-pace { padding: 0 2.5mm; }
+
+        /* 見本の旅ボタン（ヘッダー） */
+        .preset-btn {
+            min-height: 46px; padding: 6px 14px; font-size: 16px; font-weight: 700;
+            color: #fff; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.55);
+            border-radius: 999px; cursor: pointer;
+        }
+        .preset-btn:hover { background: rgba(255,255,255,.25); }
+        .preset-btn:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+
+        /* 音声入力ボタン */
+        .voice-wrap { display: flex; gap: 8px; align-items: flex-start; }
+        .voice-wrap > .f-input { flex: 1; min-width: 0; }
+        .btn-mic { color: #047857; border-color: #10b981; }
+        .btn-mic:hover { background: #ecfdf5; }
+        .btn-mic.listening { color: #fff; background: #dc2626; border-color: #dc2626; animation: micPulse 1.2s ease-in-out infinite; }
+        [hidden] { display: none !important; }
+
+        /* 自動でつくった予定の札（フォーム） */
+        .slot-form.is-auto { border-style: dashed; border-color: #f59e0b; }
+        .slot-form.is-auto .slot-name::after {
+            content: '自動でつくった案'; margin-left: 8px; padding: 1px 8px; font-size: 14px; font-weight: 700;
+            color: #92400e; background: #fef3c7; border-radius: 999px; vertical-align: middle;
+        }
+
+        /* Wikipedia の説明と出典 */
+        .b-intro { background: rgba(255,255,255,.9); border-color: var(--soft); }
+        .b-credit { font-size: 14px; line-height: 1.5; color: #475569; }
+        html.print-mode .b-intro { padding: 2.5mm 4mm; }
+        html.print-mode .b-intro .b-text { font-size: 10pt; line-height: 1.5; }
+        html.print-mode .b-credit { font-size: 7.5pt; }
+
+        /* 写真がないときの枠（季節の色） */
+        .ph-box {
+            display: none; position: absolute; inset: 0; z-index: 4; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            width: 100%; background: var(--soft); color: var(--ink); border: 3px dashed var(--main); border-radius: inherit; cursor: pointer;
+        }
+        .ph-box:hover { filter: brightness(.97); }
+        .ph-box:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+        .ph-icon { font-size: 30px; line-height: 1; }
+        .ph-text { font-size: 17px; font-weight: 700; }
+        .ph-empty > .ph-box { display: flex; }
+        .ph-empty > img, .ph-empty > .photo-label { display: none; }
+        .photo-box.ph-empty > .photo-btn { display: none; }
+        .b-hero.ph-empty { background: linear-gradient(135deg, var(--bar) 0%, var(--main) 100%); }
+        html.print-mode .ph-box { border: 1px solid var(--main); }
+        html.print-mode .ph-text { display: none; }
+        html.print-mode .ph-icon { font-size: 22pt; opacity: .7; }
+        /* 写真を変えるボタン */
+        .photo-btn {
+            position: absolute; top: 8px; right: 8px; z-index: 5; display: inline-flex; align-items: center; gap: 6px;
+            min-height: 44px; padding: 6px 12px; font-size: 16px; font-weight: 700; color: #1e293b;
+            background: rgba(255,255,255,.92); border: 2px solid #1e293b; border-radius: 999px; cursor: pointer;
+        }
+        .photo-btn:hover { background: #fff; }
+        .photo-box .photo-btn { top: 6px; right: 6px; min-height: 40px; padding: 4px 10px; font-size: 15px; }
+        .photo-btn:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+        html.print-mode .photo-btn, html.print-mode .creators-empty { display: none !important; }
+        @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.5); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
+
+        /* ===== 印刷（A4一枚） =====
+           印刷の直前に html へ .print-mode を付けてレイアウトを切り替え、
+           高さを測ってはみ出す分だけ zoom で縮める（printBrochure / preparePrint を参照） */
+        @page { size: A4 portrait; margin: 8mm; }
+        @media print {
+            .no-print { display: none !important; }
+            html, body { background: #fff !important; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #brochure { break-inside: avoid; }
+        }
+        html.print-mode body { background: #fff; padding: 0; min-height: 0; }
+        html.print-mode .no-print { display: none !important; }
+        html.print-mode main { display: block; max-width: none; margin: 0; padding: 0; }
+        html.print-mode #previewCol { position: static; max-height: none; overflow: visible; padding: 0; }
+        html.print-mode #brochure {
+            width: 194mm; margin: 0 auto; box-shadow: none; border: 1px solid #cbd5e1;
+            border-radius: 3mm; transition: none;
+        }
+        html.print-mode .b-hero { height: 42mm; }
+        html.print-mode .b-hero-inner { padding: 4mm 7mm; }
+        html.print-mode .b-dest { font-size: 24pt; }
+        html.print-mode .b-tagline { font-size: 11pt; }
+        html.print-mode .th-bar { padding: 2mm 7mm; font-size: 10pt; }
+        html.print-mode .b-body { padding: 4mm 7mm 3mm; }
+        html.print-mode .b-body > * + * { margin-top: 3.5mm !important; }
+        html.print-mode .b-day > * + * { margin-top: 2mm !important; }
+        html.print-mode .b-daydot { width: 8mm; height: 8mm; font-size: 9pt; left: -17px; }
+        html.print-mode .b-day-title { font-size: 13pt; }
+        html.print-mode .b-day .b-small { font-size: 9.5pt; }
+        html.print-mode .day-grid { display: grid; grid-template-columns: 1fr 40mm; gap: 3mm; padding-top: 0; }
+        html.print-mode .day-grid > div > * + * { margin-top: 1.6mm !important; }
+        html.print-mode .day-grid > div:last-child { gap: 2.5mm; }
+        html.print-mode .photo-box { height: 30mm; box-shadow: none; }
+        html.print-mode .b-photo-label { font-size: 8pt; }
+        html.print-mode .b-slot {
+            display: grid; grid-template-columns: 26mm 1fr; column-gap: 2mm;
+            padding: 1.6mm 2.5mm; border-radius: 2mm;
+        }
+        html.print-mode .b-slot-top { grid-row: 1 / span 2; flex-direction: column; align-items: flex-start; gap: 1mm; }
+        html.print-mode .b-chip { font-size: 9pt; padding: 0 2mm; }
+        html.print-mode .b-plan { grid-column: 2; font-size: 10.5pt; margin-top: 0; line-height: 1.45; }
+        html.print-mode .b-note { grid-column: 2; font-size: 9.5pt; margin-top: .8mm; line-height: 1.45; }
+        html.print-mode .b-head { font-size: 11.5pt; }
+        html.print-mode #outMessagesBox { padding: 2.5mm 4mm; }
+
+        html.print-mode .b-msg { font-size: 10pt; line-height: 1.5; }
+        html.print-mode .b-text, html.print-mode .b-small { font-size: 9.5pt; }
+
+        /* スクロールバー装飾 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+
+    <!-- ヘッダー (画面表示用) -->
+    <header class="no-print bg-slate-800 text-white py-5 px-4 shadow-md">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-compass text-amber-400 text-3xl"></i>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide">一泊2日 旅のしおり＆パンフレット作り</h1>
+                    <p class="text-base text-slate-200">行きたい旅を書きこんで、一枚のパンフレットにしましょう</p>
+                </div>
+            </div>
+            <!-- サンプル旅プラン -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-base text-slate-100 font-bold mr-1"><i class="fa-solid fa-book-open text-amber-300 mr-1"></i>見本の旅：</span>
+                <button type="button" onclick="usePreset('kyoto')" class="preset-btn">🌸 京都（春）</button>
+                <button type="button" onclick="usePreset('fukuoka')" class="preset-btn">🍜 福岡（秋）</button>
+                <button type="button" onclick="usePreset('hokkaido')" class="preset-btn">🌿 北海道（夏）</button>
+                <button type="button" onclick="usePreset('hakone')" class="preset-btn">🍁 箱根（秋）</button>
+                <button type="button" onclick="usePreset('kanazawa')" class="preset-btn">❄️ 金沢（冬）</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-6xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- 左側：設定・入力フォーム -->
+        <section class="no-print lg:col-span-5 bg-white p-5 rounded-2xl shadow-sm border-2 border-slate-200 space-y-6">
+            <div class="border-b-2 border-slate-100 pb-3 flex justify-between items-center gap-2">
+                <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-amber-700"></i>
+                    旅の中身を書く
+                </h2>
+                <span class="text-base bg-amber-100 text-amber-900 px-3 py-1 rounded-full font-bold">1泊2日</span>
+            </div>
+            <p id="voiceHelp" class="f-help bg-emerald-50 border-2 border-emerald-200 rounded-xl p-3" hidden>
+                <i class="fa-solid fa-microphone text-emerald-700 mr-1"></i>
+                <b>マイクのボタン</b>を押して話すと、文字になります。話し終わると自動で止まります。
+            </p>
+
+            <!-- 保存と引き継ぎ -->
+            <div class="bg-amber-50 p-4 rounded-xl border-2 border-amber-200 space-y-3">
+                <h3 class="f-section"><i class="fa-solid fa-floppy-disk text-amber-800 mr-2"></i>保存と引き継ぎ</h3>
+                <p class="f-help">書いた内容は、この端末に<b>自動で保存</b>されます。次の回に続きを作るときや、ほかの端末に移すときは「ファイルに保存」してください。</p>
+                <p id="saveStatus" class="f-help font-bold text-amber-900" aria-live="polite"></p>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="exportPlan()" class="btn-sub"><i class="fa-solid fa-download"></i> ファイルに保存</button>
+                    <button type="button" onclick="document.getElementById('importFile').click()" class="btn-sub"><i class="fa-solid fa-folder-open"></i> ファイルを開く</button>
+                    <button type="button" onclick="startBlank()" class="btn-sub"><i class="fa-solid fa-file"></i> 白紙から作る</button>
+                </div>
+                <input type="file" id="importFile" accept=".json,application/json" class="hidden" onchange="importPlan(this)">
+            </div>
+
+            <form id="itineraryForm" class="space-y-5" onsubmit="handleFormSubmit(event)">
+                <!-- 旅の基本 -->
+                <div class="day-form space-y-4">
+                    <h3 class="f-section"><i class="fa-solid fa-map-location-dot text-amber-700 mr-2"></i>どこへ、いつ行く？</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="origin" class="f-label">出発するところ</label>
+                            <input type="text" id="origin" data-voice placeholder="例：東京駅" class="f-input">
+                        </div>
+                        <div>
+                            <label for="destination" class="f-label">行き先</label>
+                            <input type="text" id="destination" data-voice placeholder="例：京都、箱根" class="f-input">
+                            <!-- Wikipedia から写真と説明をさがす -->
+                            <div id="wikiBox" class="mt-2 bg-white border-2 border-indigo-200 rounded-xl p-3 space-y-2" hidden>
+                                <p class="f-help"><i class="fa-brands fa-wikipedia-w text-indigo-700 mr-1"></i>行き先を書くと、Wikipedia から写真と説明をさがして入れます。<span class="text-slate-500">（行き先の名前だけを Wikipedia に送ります）</span></p>
+                                <p id="wikiStatus" class="f-help font-bold text-indigo-900" aria-live="polite"></p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" id="wikiNext" onclick="wikiNextMain()" class="btn-sub" hidden><i class="fa-solid fa-rotate"></i> ちがう候補にする</button>
+                                    <button type="button" id="wikiShuffle" onclick="wikiShuffleNearby()" class="btn-sub" hidden><i class="fa-solid fa-images"></i> まわりの写真を入れかえる</button>
+                                    <button type="button" id="wikiOff" onclick="wikiTurnOff()" class="btn-sub" hidden><i class="fa-solid fa-ban"></i> 使わない</button>
+                                    <button type="button" id="wikiSearch" onclick="wikiSearch(true)" class="btn-sub" hidden><i class="fa-solid fa-magnifying-glass"></i> <span>さがす</span></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label for="startDate" class="f-label">行く日</label>
+                            <input type="date" id="startDate" onchange="autoFillEndDate()" class="f-input">
+                        </div>
+                        <div>
+                            <label for="endDate" class="f-label">帰る日</label>
+                            <input type="date" id="endDate" class="f-input">
+                        </div>
+                    </div>
+                    <!-- 季節は「行く日」から自動で決める -->
+                    <input type="hidden" id="season" value="autumn">
+                    <p class="f-help"><span class="font-bold">季節：</span><span id="seasonText"></span>（行く日から自動で決まります）</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="travelStyle" class="f-label">だれと行く旅？</label>
+                            <select id="travelStyle" class="f-input">
+                                <option value="夫婦・カップル旅">夫婦・カップル旅</option>
+                                <option value="のんびり一人旅">のんびり一人旅</option>
+                                <option value="女子旅・友人旅">女子旅・友人旅</option>
+                                <option value="ファミリー旅行">家族旅行</option>
+                                <option value="祖父母と孫の旅">祖父母と孫の旅</option>
+                                <option value="三世代旅">三世代旅（祖父母・親・子）</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- ゆったり度 -->
+                    <fieldset class="bg-white border-2 border-emerald-200 rounded-xl p-3 space-y-3">
+                        <legend class="f-label px-1"><i class="fa-solid fa-mug-hot text-emerald-700 mr-1"></i>ゆったり度（体にやさしい旅にする）</legend>
+                        <div>
+                            <label for="paceWalk" class="f-label">歩く量</label>
+                            <select id="paceWalk" class="f-input">
+                                <option value="">決めない</option>
+                                <option value="少なめ">少なめ（乗り物を多めに）</option>
+                                <option value="ふつう">ふつう</option>
+                                <option value="たっぷり">たっぷり歩く</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="paceRest" class="f-label">休けい</label>
+                            <select id="paceRest" class="f-input">
+                                <option value="">決めない</option>
+                                <option value="こまめに">こまめに休む（1時間に1回ほど）</option>
+                                <option value="ときどき">ときどき休む</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="paceStairs" class="f-label">階段・坂道</label>
+                            <select id="paceStairs" class="f-input">
+                                <option value="">決めない</option>
+                                <option value="なるべく少なく">なるべく少なく（エレベーターを使う）</option>
+                                <option value="気にしない">気にしない</option>
+                            </select>
+                        </div>
+                    </fieldset>
+                    <div>
+                        <label for="transportation" class="f-label">おもな乗り物</label>
+                        <select id="transportation" class="f-input">
+                            <option value="新幹線・特急電車">新幹線・特急電車</option>
+                            <option value="ドライブ・レンタカー">車（ドライブ）</option>
+                            <option value="飛行機＋現地バス">飛行機とバス</option>
+                            <option value="ローカル線・徒歩散策">ふつうの電車と歩き</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tagline" class="f-label">旅のテーマ（ひとことで）</label>
+                        <input type="text" id="tagline" data-voice placeholder="例：紅葉と温泉で、心も体もぽかぽかに" class="f-input">
+                    </div>
+                </div>
+
+                <!-- 予定の自動作成 -->
+                <div id="planBox" class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 space-y-2">
+                    <h3 class="f-section"><i class="fa-solid fa-wand-magic-sparkles text-amber-700 mr-2"></i>予定の案</h3>
+                    <p id="planStatus" class="f-help" aria-live="polite"></p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="planMake" onclick="makePlan('keep')" class="btn-sub" hidden><i class="fa-solid fa-wand-magic-sparkles"></i> この条件で予定をつくる</button>
+                        <button type="button" id="planNext" onclick="nextPlan()" class="btn-sub" hidden><i class="fa-solid fa-rotate"></i> ちがう案にする</button>
+                        <button type="button" id="planAll" onclick="makePlan('all')" class="btn-sub" hidden><i class="fa-solid fa-eraser"></i> 書きかえた予定もつくり直す</button>
+                    </div>
+                </div>
+
+                <!-- 1日目・2日目の予定（JSで作る：予定／ひとこと） -->
+                <div id="slotForms" class="space-y-5"></div>
+
+                <!-- 仕上げ -->
+                <div class="bg-rose-50 p-4 rounded-xl border-2 border-rose-200 space-y-4">
+                    <h3 class="f-section"><i class="fa-solid fa-pen-nib text-rose-700 mr-2"></i>仕上げ</h3>
+                    <div>
+                        <label for="message" class="f-label">旅へのひとこと</label>
+                        <p class="f-help mb-2">この旅で楽しみなことや、旅への思いを書きましょう。</p>
+                        <textarea id="message" rows="3" data-voice placeholder="例：紅葉を見ながら、ゆっくり温泉につかりたいです" class="f-input"></textarea>
+                    </div>
+                    <div>
+                        <label for="memo" class="f-label">持ち物・気をつけること</label>
+                        <textarea id="memo" rows="2" data-voice placeholder="例：歩きやすい靴、羽織るもの" class="f-input"></textarea>
+                    </div>
+                    <div>
+                        <label for="creatorName" class="f-label">あなたのお名前</label>
+                        <p class="f-help mb-2">パンフレットの下に「作った人」としてのります。書かなくてもかまいません。</p>
+                        <input type="text" id="creatorName" data-voice placeholder="例：山田 花子" class="f-input">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnGenerate" class="w-full min-h-[56px] bg-slate-800 hover:bg-slate-900 text-white text-xl font-bold py-3 px-4 rounded-xl shadow transition flex items-center justify-center gap-2 cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:outline-amber-400">
+                    <i class="fa-solid fa-book-open"></i>
+                    パンフレットに反映する
+                </button>
+            </form>
+        </section>
+
+        <!-- 右側：旅のしおり（パンフレットプレビュー） -->
+        <section id="previewCol" class="lg:col-span-7 space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pb-4">
+            
+            <!-- アクションバー -->
+            <div class="no-print flex flex-wrap justify-between items-center gap-3 bg-white p-4 rounded-xl shadow-sm border-2 border-slate-200">
+                <span class="text-base text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-amber-600"></i>
+                    書いた内容がすぐにここへ表示されます
+                </span>
+                <button type="button" onclick="printBrochure()" class="min-h-[50px] bg-amber-700 hover:bg-amber-800 text-white text-lg font-bold px-5 py-2 rounded-xl transition shadow flex items-center gap-2 cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:outline-amber-400">
+                    <i class="fa-solid fa-print"></i>
+                    印刷する（PDFにも保存できます）
+                </button>
+            </div>
+
+            <!-- パンフレット本編 -->
+            <div id="brochure" class="brochure-card season-autumn bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300">
+                
+                <!-- メインビジュアル画像付きヘッダー -->
+                <div class="b-hero relative h-56 sm:h-64 overflow-hidden bg-slate-900">
+                    <img id="mainHeroImg" alt="表紙の写真" class="w-full h-full object-cover opacity-80 transition-all duration-700">
+                    
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 sm:p-8 text-white b-hero-inner">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span id="headerSeasonBadge" class="th-badge font-bold px-3 py-1 rounded-full b-small shadow-sm">
+                                🍁 秋の旅
+                            </span>
+                            <span id="outStyle" class="bg-black/40 px-3 py-1 rounded-full b-small font-bold">
+                                夫婦・カップル旅
+                            </span>
+                        </div>
+                        <h1 id="outDestination" class="b-dest text-3xl sm:text-4xl font-extrabold tracking-wide drop-shadow-md">
+                            箱根・芦ノ湖
+                        </h1>
+                        <p id="outTagline" class="b-tagline font-bold text-white mt-1 drop-shadow">
+                            静寂の森と温泉、紅葉に染まる山々を巡る癒しのひととき
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 旅の概要バー -->
+                <div class="th-bar text-white py-3 px-6 b-small font-bold flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-route th-icon"></i>
+                        <span id="outRoute">東京 発 → 箱根</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-calendar-days th-icon"></i>
+                        <span id="outDate">11月10日 〜 11日 (1泊2日)</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <i id="outTransportIcon" class="fa-solid fa-train-subway th-icon"></i>
+                        <span id="outTransport">新幹線・特急電車</span>
+                    </div>
+                </div>
+
+                <!-- スケジュール・行程表メイン内容 -->
+                <div class="b-body p-6 sm:p-8 space-y-8">
+
+                    <!-- ゆったり度 -->
+                    <div id="outPace" class="flex flex-wrap items-center gap-2 b-small"></div>
+
+                    <!-- 行き先のしょうかい（Wikipedia） -->
+                    <div id="outIntro" class="b-intro rounded-xl p-4 border-2" hidden>
+                        <h4 class="b-head th-memo-title flex items-center gap-2 mb-1">
+                            <i class="fa-solid fa-book-open"></i> <span><span id="outIntroTitle"></span>って、どんなところ？</span>
+                        </h4>
+                        <p id="outIntroText" class="b-text text-slate-800"></p>
+                        <p class="b-credit mt-1">出典：Wikipedia「<a id="outIntroLink" target="_blank" rel="noopener" class="underline"></a>」</p>
+                    </div>
+                    
+                    <!-- DAY 1 -->
+                    <div class="b-day relative pl-6 border-l-4 th-line1 space-y-4">
+                        <div class="b-daydot absolute -left-[22px] top-0 th-dot1 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-base shadow-md">
+                            1日
+                        </div>
+                        <div>
+                            <h3 class="b-day-title font-bold text-slate-900 flex items-center gap-2">
+                                1日目：出発して、見て、味わって、お宿へ
+                            </h3>
+                            <p class="b-small text-slate-600">はじめての景色と、ゆっくり休む夜</p>
+                        </div>
+
+                        <!-- タイムライン ＋ 画像グリッド -->
+                        <div class="day-grid grid grid-cols-1 md:grid-cols-12 gap-4 pt-1">
+                            <!-- スケジュール詳細 -->
+                            <div id="outDay1Slots" class="md:col-span-7 space-y-2.5"></div>
+                            
+                            <!-- Day 1 フォトカード -->
+                            <div class="md:col-span-5 flex flex-col gap-3">
+                                <div class="photo-box relative rounded-xl overflow-hidden shadow-md group h-32">
+                                    <img id="d1Img1" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    <span id="d1Img1Label" class="photo-label absolute bottom-2 left-2 bg-black/70 text-white b-photo-label px-2 py-0.5 rounded">
+                                        <i class="fa-solid fa-location-dot mr-1"></i><span id="d1Img1Cap">観光スポット</span>
+                                    </span>
+                                </div>
+                                <div class="photo-box relative rounded-xl overflow-hidden shadow-md group h-32">
+                                    <img id="d1Img2" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    <span id="d1Img2Label" class="photo-label absolute bottom-2 left-2 bg-black/70 text-white b-photo-label px-2 py-0.5 rounded">
+                                        <i class="fa-solid fa-location-dot mr-1"></i><span id="d1Img2Cap">グルメ・お宿</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DAY 2 -->
+                    <div class="b-day relative pl-6 border-l-4 th-line2 space-y-4">
+                        <div class="b-daydot absolute -left-[22px] top-0 th-dot2 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-base shadow-md">
+                            2日
+                        </div>
+                        <div>
+                            <h3 class="b-day-title font-bold text-slate-900 flex items-center gap-2">
+                                2日目：朝の散歩とお土産、そして帰り道
+                            </h3>
+                            <p class="b-small text-slate-600">季節の風景を胸に、のんびり帰りましょう</p>
+                        </div>
+
+                        <!-- タイムライン ＋ 画像グリッド -->
+                        <div class="day-grid grid grid-cols-1 md:grid-cols-12 gap-4 pt-1">
+                            <!-- スケジュール詳細 -->
+                            <div id="outDay2Slots" class="md:col-span-7 space-y-2.5"></div>
+
+                            <!-- Day 2 フォトカード -->
+                            <div class="md:col-span-5 flex flex-col gap-3">
+                                <div class="photo-box relative rounded-xl overflow-hidden shadow-md group h-32">
+                                    <img id="d2Img1" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    <span id="d2Img1Label" class="photo-label absolute bottom-2 left-2 bg-black/70 text-white b-photo-label px-2 py-0.5 rounded">
+                                        <i class="fa-solid fa-location-dot mr-1"></i><span id="d2Img1Cap">立ち寄り名所</span>
+                                    </span>
+                                </div>
+                                <div class="photo-box relative rounded-xl overflow-hidden shadow-md group h-32">
+                                    <img id="d2Img2" alt="" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    <span id="d2Img2Label" class="photo-label absolute bottom-2 left-2 bg-black/70 text-white b-photo-label px-2 py-0.5 rounded">
+                                        <i class="fa-solid fa-location-dot mr-1"></i><span id="d2Img2Cap">名物・お土産</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 旅へのひとこと -->
+                    <div id="outMessagesBox" class="th-memo rounded-xl p-4 border-2">
+                        <h4 class="b-head th-memo-title flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-comment-dots"></i> 旅へのひとこと
+                        </h4>
+                        <p id="outMessage" class="b-msg" style="white-space: pre-line"></p>
+                    </div>
+
+                    <!-- 写真の出典（Wikimedia Commons の写真を使ったとき） -->
+                    <p id="outCredits" class="b-credit" hidden></p>
+
+                    <!-- 持ち物・気をつけること -->
+                    <div id="outMemoBox" class="flex items-start gap-2 b-text text-slate-700">
+                        <i class="fa-solid fa-suitcase-rolling mt-1 text-slate-500"></i>
+                        <p><span class="font-bold">持ち物・気をつけること：</span><span id="outMemo"></span></p>
+                    </div>
+
+                    <!-- パンフレットフッター -->
+                    <div class="border-t border-slate-300 pt-3 flex flex-col sm:flex-row justify-between items-center b-small text-slate-600 gap-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-pen-nib th-memo-title"></i>
+                            <span class="font-bold">作った人：</span><span id="outCreators"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-heart text-pink-500"></i>
+                            <span>すてきな旅の思い出になりますように</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // 画像付きプリセットデータ
+        const presets = {
+            kyoto: {
+                origin: '東京駅',
+                destination: '京都・東山',
+                startDate: '',
+                endDate: '',
+                season: 'spring',
+                style: '夫婦・カップル旅',
+                transport: '新幹線・特急電車',
+                tagline: '古都の桜巡りと情緒ある町並みをゆったり歩く春の旅',
+                d1_morning: '新幹線で京都駅へ。清水寺の満開の桜景色を鑑賞',
+                d1_lunch: '祇園の老舗にて京懐石ランチと湯豆腐をいただく',
+                d1_afternoon: '哲学の道を散策。桜のトンネルを抜け、銀閣寺へ参拝',
+                d1_hotel: '鴨川沿いの町家ホテルへチェックイン。京料理の夕食',
+                d2_morning: '朝の嵐山へ移動。竹林の小径と天龍寺の庭園を鑑賞',
+                d2_lunch: '渡月橋近くで京抹茶そばと和スイーツのランチ',
+                d2_afternoon: '伏見稲荷大社を巡り、お土産に生八ツ橋や抹茶菓子を購入',
+                d2_return: '京都駅から新幹線に乗車。お弁当を食べつつ思い出を振り返る',
+                memo: '桜の季節は大変混雑するため、拝観時間は早朝がおすすめです。歩きやすいスニーカー推奨。',
+                heroImg: 'https://images.unsplash.com/photo-1770387795112-e2b476b15f71?auto=format&fit=crop&w=1200&q=80',
+                d1Img1: 'https://images.unsplash.com/photo-1494884020746-bd961a27fdc6?auto=format&fit=crop&w=600&q=80',
+                d1Img2: 'https://images.unsplash.com/photo-1740982931610-9309b6e88f30?auto=format&fit=crop&w=600&q=80',
+                d2Img1: 'https://images.unsplash.com/photo-1632923754832-60642c12a7ed?auto=format&fit=crop&w=600&q=80',
+                d2Img2: 'https://images.unsplash.com/photo-1783192485699-618ba677e671?auto=format&fit=crop&w=600&q=80',
+                captions: { d1Img1: '桜の小道', d1Img2: '京料理', d2Img1: '嵐山・竹林の小径', d2Img2: '和菓子' }
+            },
+            fukuoka: {
+                origin: '羽田空港',
+                destination: '福岡・博多',
+                startDate: '',
+                endDate: '',
+                season: 'autumn',
+                style: '女子旅・友人旅',
+                transport: '飛行機＋現地バス',
+                tagline: '博多グルメ満喫！太宰府散策と中洲屋台街をめぐる元気旅',
+                d1_morning: '福岡空港へ到着後、地下鉄で博多駅へ移動し荷物を預ける',
+                d1_lunch: '博多駅構内または長浜にて本格「豚骨博多ラーメン」',
+                d1_afternoon: '太宰府天満宮へ。参道で名物「梅ヶ枝餅」を味わい参拝',
+                d1_hotel: '中洲エリアのホテルにチェックイン。夜は中洲の屋台街で水炊きや串焼き',
+                d2_morning: '大濠公園を朝散策後、福岡タワー周辺を観光',
+                d2_lunch: '天神エリアで話題のカフェまたは旬の博多明太子御膳',
+                d2_afternoon: 'キャナルシティ博多でお買い物（明太子・通りもん等）',
+                d2_return: '福岡空港へ移動。空港限定スイーツを楽しみ羽田へ帰路',
+                memo: '屋台街は現金払いの店舗が多いので小銭・千円札を多めに準備すると便利です。',
+                heroImg: 'https://images.unsplash.com/photo-1618897037073-5edb010d92f5?auto=format&fit=crop&w=1200&q=80',
+                d1Img1: 'https://images.unsplash.com/photo-1647955817192-7e60588d3763?auto=format&fit=crop&w=600&q=80',
+                d1Img2: 'https://images.unsplash.com/photo-1591325418441-ff678baf78ef?auto=format&fit=crop&w=600&q=80',
+                d2Img1: 'https://images.unsplash.com/photo-1605472758900-3d101aaf980b?auto=format&fit=crop&w=600&q=80',
+                d2Img2: 'https://images.unsplash.com/photo-1698110707910-6af9a3fd5d07?auto=format&fit=crop&w=600&q=80',
+                captions: { d1Img1: '神社にお参り', d1Img2: '博多ラーメン', d2Img1: '福岡タワー', d2Img2: '中洲の屋台' }
+            },
+            hokkaido: {
+                origin: '羽田空港',
+                destination: '北海道・富良野',
+                startDate: '',
+                endDate: '',
+                season: 'summer',
+                style: '女子旅・友人旅',
+                transport: 'ドライブ・レンタカー',
+                tagline: '一面に広がるラベンダー畑と爽快な北海道ドライブ',
+                d1_morning: '旭川空港到着後、レンタカーでパッチワークの路・美瑛へ',
+                d1_lunch: '美瑛の丘を望むレストランで地場野菜カレーランチ',
+                d1_afternoon: '青い池と白ひげの滝を訪問。コバルトブルーの絶景に感動',
+                d1_hotel: '富良野のリゾートホテルへ。北海道産牛のバーベキューと星空観察',
+                d2_morning: 'ファーム富田で満開のラベンダー畑を満喫。ラベンダーソフト',
+                d2_lunch: '富良野オムカレーまたは手打ちそばのランチ',
+                d2_afternoon: 'チーズ工房でお買い物。限定スイーツを試食',
+                d2_return: '空港へ向かい、夜の便で爽やかな旅を締めくくる',
+                memo: '夏でも朝夕は肌寒いことがあるので薄手のカーディガンがあると便利です。',
+                heroImg: 'https://images.unsplash.com/photo-1626911635167-0b3006fbda39?auto=format&fit=crop&w=1200&q=80',
+                d1Img1: 'https://images.unsplash.com/photo-1539430416000-065144bb6a86?auto=format&fit=crop&w=600&q=80',
+                d1Img2: 'https://images.unsplash.com/photo-1694155011869-6ec870281cfa?auto=format&fit=crop&w=600&q=80',
+                d2Img1: 'https://images.unsplash.com/photo-1787977614953-3cee8a882c97?auto=format&fit=crop&w=600&q=80',
+                d2Img2: 'https://images.unsplash.com/photo-1686922172452-65f39c99ea6a?auto=format&fit=crop&w=600&q=80',
+                captions: { d1Img1: '美瑛・青い池', d1Img2: '丘いっぱいの花畑', d2Img1: 'ラベンダー', d2Img2: 'ソフトクリーム' }
+            },
+            hakone: {
+                origin: '東京・新宿駅',
+                destination: '箱根・芦ノ湖',
+                startDate: '',
+                endDate: '',
+                season: 'autumn',
+                style: '祖父母と孫の旅', paceWalk: '少なめ', paceRest: 'こまめに', paceStairs: 'なるべく少なく',
+                transport: '新幹線・特急電車',
+                tagline: '静寂の森と温泉、紅葉に染まる山々を巡る癒しのひととき',
+                d1_morning: 'ロマンスカーで箱根湯本へ。箱根登山電車で強羅方面へ移動',
+                d1_lunch: '強羅にて名物「豆腐かつ煮」を堪能',
+                d1_afternoon: '箱根ロープウェイで大涌谷へ。名物「黒たまご」と絶景を楽しむ',
+                d1_hotel: '芦ノ湖畔の温泉旅館にチェックイン。懐石料理と露天風呂を満喫',
+                d2_morning: '朝の芦ノ湖海賊船に乗船。箱根神社を参拝し平和の鳥居で撮影',
+                d2_lunch: '湖畔のベーカリーカフェで芦ノ湖を眺めながらランチ',
+                d2_afternoon: '箱根湯本駅前商店街でお土産探し（温泉まんじゅう・寄木細工）',
+                d2_return: '夕方の特急でゆったりと帰路へ。楽しかった旅の余韻に浸る',
+                memo: '山間部は朝夕冷え込むため羽織るものを持参すること。箱根フリーパスを活用すると移動がスムーズです。',
+                notes: {
+                    d1_morning: '展望席を予約すると、前の景色がよく見えて楽しいです',
+                    d1_lunch: 'むかし家族で食べた、やさしい味。胃にも軽いです',
+                    d1_afternoon: '黒たまごは、ひとつ食べると7年長生きすると言われています',
+                    d1_hotel: 'お部屋にお風呂がある宿なら、ゆっくり休めます',
+                    d2_morning: '海賊船の上から見る富士山が楽しみです',
+                    d2_afternoon: '寄木細工の小物入れは、手ごろでお土産にぴったり'
+                },
+                heroImg: 'https://images.unsplash.com/photo-1749352133990-67bf2a652149?auto=format&fit=crop&w=1200&q=80',
+                d1Img1: 'https://images.unsplash.com/photo-1583901362846-13c55e045708?auto=format&fit=crop&w=600&q=80',
+                d1Img2: 'https://images.unsplash.com/photo-1771773563156-2f32863f2c7c?auto=format&fit=crop&w=600&q=80',
+                d2Img1: 'https://images.unsplash.com/photo-1631488408876-2dc3a7312657?auto=format&fit=crop&w=600&q=80',
+                d2Img2: 'https://images.unsplash.com/photo-1601823947179-2d2397d68d5e?auto=format&fit=crop&w=600&q=80',
+                captions: { d1Img1: '大涌谷', d1Img2: '温泉旅館', d2Img1: '芦ノ湖の海賊船', d2Img2: '箱根神社の鳥居' }
+            },
+            kanazawa: {
+                origin: '東京駅',
+                destination: '金沢・ひがし茶屋街',
+                startDate: '',
+                endDate: '',
+                season: 'winter',
+                style: 'のんびり一人旅',
+                transport: '新幹線・特急電車',
+                tagline: '雪吊りの美しい兼六園と旬のカニ・金箔文化に触れる冬旅',
+                d1_morning: '北陸新幹線で金沢駅へ。雪吊りが施された兼六園を散策',
+                d1_lunch: '近江町市場にて旬の加能ガニと鮮魚がのった豪華海鮮丼',
+                d1_afternoon: '金沢21世紀美術館で現代アートを鑑賞',
+                d1_hotel: '和モダンな旅館へ。加賀野菜と日本海の幸を贅沢に堪能',
+                d2_morning: 'ひがし茶屋街の古い街並みを散策。金箔ソフトを味わう',
+                d2_lunch: '治部煮（じぶに）などの伝統的な加賀料理ランチ',
+                d2_afternoon: '長町武家屋敷跡の雪景色を歩く。和菓子作り体験',
+                d2_return: '金沢駅でお土産（九谷焼、金箔スイーツ）を購入し帰路へ',
+                memo: '冬の金沢は足元が滑りやすいため、防水加工の効いた滑りにくいブーツが必須です。',
+                heroImg: 'https://images.unsplash.com/photo-1773910355314-55204cc7b0ee?auto=format&fit=crop&w=1200&q=80',
+                d1Img1: 'https://images.unsplash.com/photo-1768825443209-6d7cb473dda9?auto=format&fit=crop&w=600&q=80',
+                d1Img2: 'https://images.unsplash.com/photo-1575253301299-db3f10d814dd?auto=format&fit=crop&w=600&q=80',
+                d2Img1: 'https://images.unsplash.com/photo-1764751589091-be8c49f3bdc2?auto=format&fit=crop&w=600&q=80',
+                d2Img2: 'https://images.unsplash.com/photo-1791620050914-9822a7a1eb46?auto=format&fit=crop&w=600&q=80',
+                captions: { d1Img1: '雪の兼六園', d1Img2: '海の幸', d2Img1: 'ひがし茶屋街', d2Img2: '和菓子' }
+            }
+        };
+
+        // 季節のバッジと表示設定
+        const seasonConfig = {
+            spring: { badge: '🌸 春の旅プラン' },
+            summer: { badge: '🌿 夏の旅プラン' },
+            autumn: { badge: '🍁 秋の旅プラン' },
+            winter: { badge: '❄️ 冬の旅プラン' }
+        };
+
+        // ===== 写真の表示ルール =====
+        // ・自分で選んだ写真（data:image）は、いつでも表示する
+        // ・見本の写真（https）は、行き先が見本のままのときだけ表示する
+        //   （行き先を書きかえたら、違う場所の写真が出ないよう「写真をのせる」枠にする）
+        // ・読み込めなかった写真も「写真をのせる」枠にする（別の場所の写真で代用しない）
+        const DEFAULT_CAPTIONS = { d1Img1: '1日目 午前', d1Img2: '1日目 午後', d2Img1: '2日目 午前', d2Img2: '2日目 午後' };
+        let photoMeta = { source: '', presetDest: '', captions: {}, credits: {}, intro: null, wikiOff: '' };
+
+        function setPhoto(id, src) {
+            const img = document.getElementById(id);
+            if (!img) return;
+            img.dataset.broken = '';
+            if (src) img.src = src; else img.removeAttribute('src');
+        }
+
+        function updatePhotos() {
+            const dest = getInputValue('destination');
+            const presetOk = !!photoMeta.presetDest && dest === photoMeta.presetDest;
+            const season = getInputValue('season', 'spring');
+            const emoji = { spring: '🌸', summer: '🌿', autumn: '🍁', winter: '❄️' }[season] || '🌸';
+            ['mainHeroImg', 'd1Img1', 'd1Img2', 'd2Img1', 'd2Img2'].forEach(id => {
+                const img = document.getElementById(id);
+                if (!img) return;
+                const src = img.getAttribute('src') || '';
+                const isUser = /^data:image\//.test(src);
+                const isPreset = /^https:\/\//.test(src);
+                const show = !img.dataset.broken && (isUser || (isPreset && presetOk));
+                const box = img.parentNode;
+                box.classList.toggle('ph-empty', !show);
+                const btnText = box.querySelector('.photo-btn span');
+                if (btnText) btnText.textContent = show ? '写真を変える' : '写真をのせる';
+                const icon = box.querySelector('.ph-icon');
+                if (icon) icon.textContent = emoji;
+                if (id !== 'mainHeroImg') {
+                    const cap = (show && isPreset && photoMeta.captions[id]) || DEFAULT_CAPTIONS[id];
+                    setTextContent(`${id}Cap`, cap);
+                    img.alt = show ? cap : '';
+                }
+            });
+            renderWikiExtras();
+        }
+
+        // ===== Wikipedia から写真と説明を取ってくる =====
+        // 気に入らなければ、ここで止めたり、動きを変えたりできます。
+        const WIKI_SETTINGS = {
+            enabled: true,          // false にすると、この機能をまるごと止める（前と同じ「写真をのせる」枠に戻る）
+            autoSearch: true,       // true: 行き先を書いたら自動でさがす ／ false: 「さがす」ボタンを押したときだけ
+            fillSmallPhotos: true,  // true: 予定の横の写真4枚にも、近くの見どころの写真を入れる
+            showIntro: true,        // true: パンフレットに「〇〇って、どんなところ？」を出す
+            nearbyRadius: 10000,    // 近くの見どころをさがす範囲（メートル。最大 10000）
+            introMaxChars: 130      // 説明文の長さの上限（文字）
+        };
+        const WIKI_API = 'https://ja.wikipedia.org/w/api.php';
+        // 旅の写真に向かないページ（鉄道・道路・会社・行事など）は名前で外す
+        const WIKI_SKIP = /(駅$|駅 \(|線$|線 \(|鉄道|電鉄|軌道|バス|営業所|自動車道|道路|インターチェンジ|ジャンクション|サービスエリア|パーキングエリア|県道|都道|府道|国道|駅伝|競走|ステークス|新聞|放送|ホールディングス|株式会社|事業所|基地|藩$|戦争|\(列車\)|空港|学校|大学|ターンパイク|スペシャル|郵便局|警察|消防|病院|役場|変電所|選挙区|一覧|中継局|送信所|放送所|グランド|発電所|浄水場|処理場)/;
+        // 近くの見どころで優先するもの／後回しにするもの
+        const WIKI_SPOT = /(寺|神社|神宮|宮|大社|堂|城|城跡|公園|庭園|園|湖|池|滝|渓谷|峡|岬|海岸|浜|温泉|橋|山|岳|島|高原|茶屋街|並木|美術館|博物館|資料館|記念館|水族館|市場|通り|商店街|遺跡|古墳|灯台)$/;
+        const WIKI_AREA = /(市|町|村|郡|区|地区)$/;
+        const WIKI_GOOD_END =/(市|町|村|温泉|神社|神宮|宮|寺|院|城|公園|庭園|湖|山|島|岳|渓谷|峡|高原|滝|浜|岬|海岸|街|茶屋街|宿)$/;
+
+        let wikiPool = null;      // { query, mains:[], mainIdx, nearby:[], nearOffset }（保存はしない）
+        let wikiStatus = 'idle';  // idle / searching / found / notfound / error / off
+        let wikiToken = 0;
+        let wikiTimer = null;
+
+        function wikiFetch(params) {
+            const p = new URLSearchParams(Object.assign({ format: 'json', formatversion: '2', origin: '*' }, params));
+            return fetch(`${WIKI_API}?${p}`).then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+        }
+
+        function wikiTokens(q) {
+            return q.split(/[\s・、,，／/]+/).filter(Boolean);
+        }
+
+        function cleanTitle(t) {
+            return t.replace(/\s*\(.*\)\s*$/, '');
+        }
+
+        function shortenText(t, max) {
+            t = (t || '').replace(/\s+/g, ' ').replace(/（[^（）]*）/g, '').trim();
+            return t.length > max ? t.slice(0, max - 1) + '…' : t;
+        }
+
+        // 説明文は「。」の切れ目で短くする（文の途中で切らない）
+        function shortenSentences(t, max) {
+            t = (t || '').replace(/\s+/g, ' ').replace(/（[^（）]*）/g, '').trim();
+            const parts = t.split(/(?<=。)/);
+            let out = '';
+            for (const s of parts) {
+                if ((out + s).trim().length > max) break;
+                out += s;
+            }
+            return out.trim() || shortenText(t, max);
+        }
+
+        function pageUsable(p) {
+            return p.thumbnail && p.thumbnail.source && /^https:\/\//.test(p.thumbnail.source)
+                && !(p.pageprops && 'disambiguation' in p.pageprops) && !WIKI_SKIP.test(p.title);
+        }
+
+        function scoreMain(p, tokens) {
+            let s = -p.index * 0.05;
+            if (tokens.includes(p.title) || tokens.includes(cleanTitle(p.title))) s += 3;
+            if (tokens.some(t => p.title.startsWith(t))) s += 1;
+            if (WIKI_GOOD_END.test(cleanTitle(p.title))) s += 1;
+            if (p.coordinates && p.coordinates.length) s += 2;   // 地図上の位置がある＝実在の場所の可能性が高い
+            return s;
+        }
+
+        function toItem(p) {
+            return {
+                title: p.title,
+                caption: cleanTitle(p.title),
+                thumb: p.thumbnail.source,
+                file: p.pageimage || '',
+                extract: p.extract || '',
+                url: p.fullurl || `https://ja.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+                coord: p.coordinates && p.coordinates[0] ? p.coordinates[0] : null
+            };
+        }
+
+        // 写真の作者とライセンス（表示が必要なので取ってくる）
+        async function wikiCredit(file) {
+            if (!file) return '';
+            try {
+                const j = await wikiFetch({
+                    action: 'query', titles: `File:${file}`, prop: 'imageinfo',
+                    iiprop: 'extmetadata', iiextmetadatafilter: 'Artist|LicenseShortName'
+                });
+                const page = j.query && j.query.pages && j.query.pages[0];
+                const meta = page && page.imageinfo && page.imageinfo[0] && page.imageinfo[0].extmetadata || {};
+                // Artist は HTML で返るので、文字だけにする（DOMParser はスクリプトを動かさない）
+                const artistHtml = meta.Artist ? meta.Artist.value : '';
+                const artist = artistHtml ? new DOMParser().parseFromString(artistHtml, 'text/html').body.textContent.trim() : '';
+                const lic = meta.LicenseShortName ? meta.LicenseShortName.value : '';
+                return [shortenText(artist, 40), shortenText(lic, 30)].filter(Boolean).join('／');
+            } catch (err) {
+                return '';
+            }
+        }
+
+        function setWikiStatus(state, text) {
+            wikiStatus = state;
+            setTextContent('wikiStatus', text || '');
+            refreshWikiButtons();
+        }
+
+        function refreshWikiButtons() {
+            const box = document.getElementById('wikiBox');
+            if (!box) return;
+            const dest = getInputValue('destination');
+            // 見本の行き先のままのときは出さない
+            const isPreset = photoMeta.source === 'preset' && dest === photoMeta.presetDest;
+            box.hidden = !WIKI_SETTINGS.enabled || !dest || isPreset;
+            const show = (id, on) => { const b = document.getElementById(id); if (b) b.hidden = !on; };
+            const found = wikiStatus === 'found';
+            show('wikiNext', found);
+            show('wikiShuffle', found && WIKI_SETTINGS.fillSmallPhotos);
+            show('wikiOff', found);
+            show('wikiSearch', ['idle', 'notfound', 'error', 'off'].includes(wikiStatus));
+            const label = document.querySelector('#wikiSearch span');
+            if (label) label.textContent = wikiStatus === 'idle' ? 'さがす' : 'もう一度さがす';
+        }
+
+        // 行き先が書きかわったら、少し待ってから自動でさがす
+        function scheduleWikiSearch() {
+            if (!WIKI_SETTINGS.enabled) return;
+            clearTimeout(wikiTimer);
+            const dest = getInputValue('destination');
+            if (dest === photoMeta.presetDest && (photoMeta.source === 'preset' || photoMeta.source === 'wiki')) {
+                if (photoMeta.source === 'wiki') setWikiStatus('found', `Wikipedia の「${photoMeta.intro ? photoMeta.intro.title : dest}」の写真と説明を使っています。`);
+                else refreshWikiButtons();
+                return;
+            }
+            if (!dest) { setWikiStatus('idle', ''); return; }
+            if (photoMeta.wikiOff === dest) { setWikiStatus('off', 'Wikipedia の写真と説明は使っていません。'); return; }
+            if (!WIKI_SETTINGS.autoSearch) { setWikiStatus('idle', ''); return; }
+            setWikiStatus('idle', '');
+            wikiTimer = setTimeout(() => wikiSearch(false), 1500);
+        }
+
+        async function wikiSearch(byButton) {
+            if (!WIKI_SETTINGS.enabled) return;
+            const dest = getInputValue('destination');
+            if (!dest) return;
+            if (byButton && photoMeta.wikiOff === dest) photoMeta.wikiOff = '';
+            const token = ++wikiToken;
+            setWikiStatus('searching', `「${dest}」の写真と説明をさがしています…`);
+            try {
+                const j = await wikiFetch({
+                    action: 'query', generator: 'search', gsrsearch: wikiTokens(dest).join(' '), gsrlimit: '20', gsrnamespace: '0',
+                    prop: 'pageimages|extracts|pageprops|info|coordinates', piprop: 'thumbnail|name', pithumbsize: '1000', pilimit: '20',
+                    exintro: '1', explaintext: '1', exsentences: '3', exlimit: '20', ppprop: 'disambiguation', inprop: 'url', colimit: '20'
+                });
+                if (token !== wikiToken) return; // もっと新しい検索が始まっている
+                const tokens = wikiTokens(dest);
+                const pages = (j.query && j.query.pages || []).filter(pageUsable);
+                if (!pages.length) {
+                    setWikiStatus('notfound', `「${dest}」の写真は見つかりませんでした。行き先の書き方を変えると、見つかることがあります。`);
+                    return;
+                }
+                const mains = pages.slice().sort((a, b) => scoreMain(b, tokens) - scoreMain(a, tokens)).map(toItem);
+                wikiPool = { query: dest, mains, mainIdx: 0, nearby: [], nearOffset: 0 };
+                await wikiLoadNearby(token);
+                if (token !== wikiToken) return;
+                await wikiApply();
+            } catch (err) {
+                if (token !== wikiToken) return;
+                setWikiStatus('error', 'インターネットにつながらないため、さがせませんでした。');
+            }
+        }
+
+        // 近くの見どころ（地図上の位置から半径 nearbyRadius 以内）
+        async function wikiLoadNearby(token) {
+            const pool = wikiPool;
+            const main = pool.mains[pool.mainIdx];
+            pool.nearby = [];
+            pool.nearOffset = 0;
+            const used = new Set([main.title, main.file]);
+            // メインに位置がなければ、位置のあるほかの候補を中心にする
+            const center = main.coord ? main : pool.mains.find(m => m.coord);
+            if (WIKI_SETTINGS.fillSmallPhotos && center) {
+                try {
+                    const j = await wikiFetch({
+                        action: 'query', generator: 'geosearch', ggscoord: `${center.coord.lat}|${center.coord.lon}`,
+                        ggsradius: String(Math.min(10000, WIKI_SETTINGS.nearbyRadius)), ggslimit: '50',
+                        prop: 'pageimages|pageprops|info', piprop: 'thumbnail|name', pithumbsize: '800', pilimit: '50',
+                        ppprop: 'disambiguation', inprop: 'url'
+                    });
+                    if (token !== wikiToken) return;
+                    const nearScore = p => (WIKI_SPOT.test(cleanTitle(p.title)) ? 2 : 0) - (WIKI_AREA.test(cleanTitle(p.title)) ? 2 : 0) - p.index * 0.01;
+                    const pages = (j.query && j.query.pages || []).filter(pageUsable).sort((a, b) => nearScore(b) - nearScore(a));
+                    pages.forEach(p => {
+                        const it = toItem(p);
+                        if (used.has(it.title) || used.has(it.file)) return;
+                        used.add(it.title); used.add(it.file);
+                        pool.nearby.push(it);
+                    });
+                } catch (err) { /* 近くの見どころが取れなくても、メインだけで続ける */ }
+            }
+            // 足りないときは検索のほかの候補で補う
+            pool.mains.forEach((it, i) => {
+                if (i === pool.mainIdx || used.has(it.title) || used.has(it.file)) return;
+                used.add(it.title); used.add(it.file);
+                pool.nearby.push(it);
+            });
+        }
+
+        // 選んだ候補をパンフレットに入れる（自分の写真は上書きしない）
+        async function wikiApply() {
+            const pool = wikiPool;
+            if (!pool) return;
+            const main = pool.mains[pool.mainIdx];
+            const token = wikiToken;
+            const picks = { mainHeroImg: main };
+            if (WIKI_SETTINGS.fillSmallPhotos) {
+                // 「だれと行く旅？」に合う見どころ（孫なら動物園や公園 など）を先に並べる
+                const prefer = planStyle().prefer;
+                const ordered = pool.nearby
+                    .map((it, i) => ({ it, i, s: prefer && prefer.test(it.caption) ? 1 : 0 }))
+                    .sort((a, b) => b.s - a.s || a.i - b.i)
+                    .map(x => x.it);
+                ['d1Img1', 'd1Img2', 'd2Img1', 'd2Img2'].forEach((id, i) => {
+                    const n = ordered.length;
+                    if (n) picks[id] = ordered[(pool.nearOffset + i) % n];
+                });
+                // 候補が4つより少ないときに同じ写真が並ばないようにする
+                const seen = new Set([main.title]);
+                ['d1Img1', 'd1Img2', 'd2Img1', 'd2Img2'].forEach(id => {
+                    if (picks[id] && seen.has(picks[id].title)) delete picks[id];
+                    else if (picks[id]) seen.add(picks[id].title);
+                });
+            }
+            const captions = {};
+            const files = {};
+            IMAGE_IDS.forEach(id => {
+                const img = document.getElementById(id);
+                const isUser = /^data:image\//.test(img.getAttribute('src') || '');
+                if (isUser) return;
+                const it = picks[id];
+                setPhoto(id, it ? it.thumb : '');
+                if (it) {
+                    files[id] = it.file;
+                    if (id !== 'mainHeroImg') captions[id] = it.caption;
+                }
+            });
+            photoMeta = {
+                source: 'wiki', presetDest: pool.query, captions, credits: {}, wikiOff: '',
+                intro: { title: main.title, text: shortenSentences(main.extract, WIKI_SETTINGS.introMaxChars), url: main.url }
+            };
+            setWikiStatus('found', `Wikipedia の「${main.title}」の写真と説明を入れました。`);
+            generateBrochure();
+            onPhotosChanged();
+            // 写真の作者とライセンスをあとから取ってくる
+            const entries = await Promise.all(Object.keys(files).map(async id => [id, await wikiCredit(files[id])]));
+            if (token !== wikiToken || photoMeta.source !== 'wiki') return;
+            entries.forEach(([id, c]) => { photoMeta.credits[id] = c || 'Wikimedia Commons'; });
+            generateBrochure();
+        }
+
+        // 「ちがう候補にする」：表紙と説明を、次の候補に
+        async function wikiNextMain() {
+            if (!wikiPool || wikiPool.query !== getInputValue('destination')) { await wikiSearch(true); return; }
+            const token = ++wikiToken;
+            wikiPool.mainIdx = (wikiPool.mainIdx + 1) % wikiPool.mains.length;
+            setWikiStatus('searching', 'ほかの候補をさがしています…');
+            await wikiLoadNearby(token);
+            if (token !== wikiToken) return;
+            await wikiApply();
+        }
+
+        // 「まわりの写真を入れかえる」：予定の横の4枚だけを入れかえる
+        async function wikiShuffleNearby() {
+            if (!wikiPool || wikiPool.query !== getInputValue('destination')) { await wikiSearch(true); return; }
+            ++wikiToken;
+            const n = wikiPool.nearby.length;
+            if (n > 4) wikiPool.nearOffset = (wikiPool.nearOffset + 4) % n;
+            await wikiApply();
+        }
+
+        // 「だれと行く旅？」が変わったとき：近くの見どころを選び直す（写真が変わると予定もつくり直される）
+        async function restyleWikiPhotos() {
+            const dest = getInputValue('destination');
+            if (!WIKI_SETTINGS.enabled || !WIKI_SETTINGS.fillSmallPhotos) return;
+            if (photoMeta.source !== 'wiki' || photoMeta.presetDest !== dest) return;
+            if (!wikiPool || wikiPool.query !== dest) { await wikiSearch(true); return; } // 開き直したあとは候補を取り直す
+            ++wikiToken;
+            wikiPool.nearOffset = 0;
+            await wikiApply();
+        }
+
+        // 「使わない」：Wikipedia の写真と説明を外す（自分の写真は残す）
+        function wikiTurnOff() {
+            ++wikiToken;
+            const dest = getInputValue('destination');
+            IMAGE_IDS.forEach(id => {
+                const src = document.getElementById(id).getAttribute('src') || '';
+                if (!/^data:image\//.test(src)) setPhoto(id, '');
+            });
+            photoMeta = { source: '', presetDest: '', captions: {}, credits: {}, intro: null, wikiOff: dest };
+            setWikiStatus('off', 'Wikipedia の写真と説明は使っていません。');
+            generateBrochure();
+            onPhotosChanged();
+        }
+
+        // パンフレットの「どんなところ？」と写真の出典
+        function renderWikiExtras() {
+            const dest = getInputValue('destination');
+            const active = photoMeta.source === 'wiki' && photoMeta.presetDest === dest;
+            const intro = photoMeta.intro;
+            const introBox = document.getElementById('outIntro');
+            if (introBox) {
+                const showIntro = active && WIKI_SETTINGS.showIntro && intro && intro.text;
+                introBox.hidden = !showIntro;
+                if (showIntro) {
+                    setTextContent('outIntroTitle', intro.title);
+                    setTextContent('outIntroText', intro.text);
+                    const a = document.getElementById('outIntroLink');
+                    a.textContent = intro.title;
+                    a.href = intro.url;
+                }
+            }
+            const credits = [];
+            if (active) {
+                IMAGE_IDS.forEach(id => {
+                    const img = document.getElementById(id);
+                    const src = img.getAttribute('src') || '';
+                    const c = photoMeta.credits && photoMeta.credits[id];
+                    if (!c || !/^https:\/\//.test(src) || img.parentNode.classList.contains('ph-empty')) return;
+                    const name = id === 'mainHeroImg' ? (intro ? intro.title : '表紙') : (photoMeta.captions[id] || '');
+                    credits.push(`${name}（${c}）`);
+                });
+            }
+            const cr = document.getElementById('outCredits');
+            if (cr) {
+                cr.hidden = !credits.length;
+                cr.textContent = credits.length ? `写真：Wikimedia Commons より　${credits.join('、')}` : '';
+            }
+        }
+
+        // 往路入力時に自動で復路（翌日）をセット
+        function autoFillEndDate() {
+            const startInput = document.getElementById('startDate');
+            const endInput = document.getElementById('endDate');
+            if (startInput && startInput.value) {
+                const startDate = new Date(startInput.value);
+                if (!isNaN(startDate.getTime())) {
+                    const nextDate = new Date(startDate);
+                    nextDate.setDate(startDate.getDate() + 1);
+                    const yyyy = nextDate.getFullYear();
+                    const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(nextDate.getDate()).padStart(2, '0');
+                    endInput.value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+        }
+
+        // 日付表示の整形 helper (例: 2026年11月10日(火) 〜 11日(水))
+        function formatTravelDates(startStr, endStr) {
+            if (!startStr) return '1泊2日プラン';
+            
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const d1 = new Date(startStr);
+            if (isNaN(d1.getTime())) return startStr;
+
+            const d1Text = `${d1.getMonth() + 1}月${d1.getDate()}日(${days[d1.getDay()]})`;
+
+            if (!endStr) return `${d1Text} 〜 (1泊2日)`;
+            
+            const d2 = new Date(endStr);
+            if (isNaN(d2.getTime())) return `${d1Text} 〜`;
+
+            const d2Text = (d1.getMonth() === d2.getMonth()) 
+                ? `${d2.getDate()}日(${days[d2.getDay()]})`
+                : `${d2.getMonth() + 1}月${d2.getDate()}日(${days[d2.getDay()]})`;
+
+            return `${d1Text} 〜 ${d2Text} (1泊2日)`;
+        }
+
+        // 安全なDOM値取得ユーティリティ
+        function getInputValue(id, defaultValue = '') {
+            const el = document.getElementById(id);
+            return (el && el.value.trim() !== '') ? el.value.trim() : defaultValue;
+        }
+
+        function setInputValue(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.value = value || '';
+        }
+
+        // 入力値は必ず textContent で入れる（HTMLとして解釈させない）
+        function setTextContent(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        // 移動手段ごとのアイコン
+        const transportIcons = {
+            '新幹線・特急電車': 'fa-train-subway',
+            'ドライブ・レンタカー': 'fa-car-side',
+            '飛行機＋現地バス': 'fa-plane',
+            'ローカル線・徒歩散策': 'fa-person-walking'
+        };
+
+        // ===== 予定の枠（1日目・2日目 × 4つ） =====
+        const SLOTS = [
+            { key: 'd1_morning',   day: 1, label: '午前',         ph: '例：出発して、最初の名所へ' },
+            { key: 'd1_lunch',     day: 1, label: 'お昼ごはん',   ph: '例：その土地の名物料理' },
+            { key: 'd1_afternoon', day: 1, label: '午後',         ph: '例：見どころを見学する' },
+            { key: 'd1_hotel',     day: 1, label: '夕方・お宿',   ph: '例：お宿に着いて、夕食と温泉' },
+            { key: 'd2_morning',   day: 2, label: '午前',         ph: '例：朝ごはんのあと、朝市へ' },
+            { key: 'd2_lunch',     day: 2, label: 'お昼ごはん',   ph: '例：景色のよいお店で' },
+            { key: 'd2_afternoon', day: 2, label: '午後',         ph: '例：お土産さがし、散歩' },
+            { key: 'd2_return',    day: 2, label: '夕方・帰り道', ph: '例：帰りの電車に乗る' }
+        ];
+
+        // 小さなDOM作成ヘルパー（文字は必ず textContent で入れる）
+        function el(tag, cls, text) {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (text != null) e.textContent = text;
+            return e;
+        }
+
+        // ===== 入力フォームの組み立て =====
+        function renderSlotForms() {
+            const box = document.getElementById('slotForms');
+            box.replaceChildren();
+            [1, 2].forEach(day => {
+                const wrap = el('div', 'day-form space-y-3');
+                wrap.innerHTML = day === 1
+                    ? '<h3 class="f-section"><i class="fa-solid fa-sun text-amber-600 mr-2"></i>1日目の予定</h3>'
+                    : '<h3 class="f-section"><i class="fa-solid fa-moon text-indigo-600 mr-2"></i>2日目の予定</h3>';
+                SLOTS.filter(s => s.day === day).forEach(s => {
+                    const card = el('div', 'slot-form space-y-2');
+                    card.innerHTML = `
+                        <label for="${s.key}" class="slot-name">${s.label}</label>
+                        <textarea id="${s.key}" rows="2" data-voice class="f-input" placeholder="${s.ph}"></textarea>
+                        <label for="${s.key}_note" class="f-label">ひとこと（思い出・楽しみなことなど。なくてもかまいません）</label>
+                        <textarea id="${s.key}_note" rows="2" data-voice class="f-input" placeholder="例：むかし家族で行って、とてもよかった"></textarea>`;
+                    wrap.appendChild(card);
+                });
+                box.appendChild(wrap);
+            });
+        }
+
+        function setupFormEvents() {
+            // 入力するたびにパンフレットへ反映
+            let timer = null;
+            const form = document.getElementById('itineraryForm');
+            const schedule = () => { clearTimeout(timer); timer = setTimeout(generateBrochure, 150); };
+            const PLAN_COND = ['destination', 'origin', 'startDate', 'endDate', 'travelStyle', 'transportation', 'paceWalk', 'paceRest', 'paceStairs'];
+            const onCond = e => {
+                if (!PLAN_COND.includes(e.target.id)) return;
+                // 「だれと行く旅？」が変わったら、見どころ（写真）から選び直す
+                if (e.target.id === 'travelStyle' && e.type === 'change') restyleWikiPhotos();
+                scheduleAutoPlan();
+            };
+            form.addEventListener('input', e => { schedule(); if (e.target.id === 'destination') scheduleWikiSearch(); onCond(e); });
+            form.addEventListener('change', e => { schedule(); onCond(e); });
+        }
+
+        // フォーム送信ハンドラー
+        function handleFormSubmit(event) {
+            if (event) event.preventDefault();
+            generateBrochure();
+            return false;
+        }
+
+        // ===== 季節は「行く日」から決める =====
+        const SEASON_LABEL = { spring: '🌸 春', summer: '🌿 夏', autumn: '🍁 秋', winter: '❄️ 冬' };
+        function travelMonth() {
+            const v = getInputValue('startDate');
+            const d = v ? new Date(v) : new Date();
+            return isNaN(d.getTime()) ? new Date().getMonth() + 1 : d.getMonth() + 1;
+        }
+        function seasonOfMonth(m) {
+            if (m >= 3 && m <= 5) return 'spring';
+            if (m >= 6 && m <= 8) return 'summer';
+            if (m >= 9 && m <= 11) return 'autumn';
+            return 'winter';
+        }
+        function updateSeason() {
+            const s = seasonOfMonth(travelMonth());
+            const e = document.getElementById('season');
+            if (e) e.value = s;
+            setTextContent('seasonText', SEASON_LABEL[s]);
+        }
+        // 見本の旅は、その季節のいちばん近い日付にする（京都の桜なら次の4月）
+        function nextDateForSeason(season) {
+            const md = { spring: [4, 5], summer: [7, 20], autumn: [11, 10], winter: [2, 5] }[season] || [4, 5];
+            const today = new Date();
+            const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+            // いまがその季節なら、2週間後にする（季節が変わってしまう場合は除く）
+            if (seasonOfMonth(today.getMonth() + 1) === season) {
+                const soon = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
+                if (seasonOfMonth(soon.getMonth() + 1) === season) return fmt(soon);
+                const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+                if (seasonOfMonth(tomorrow.getMonth() + 1) === season) return fmt(tomorrow);
+            }
+            let d = new Date(today.getFullYear(), md[0] - 1, md[1]);
+            if (d < new Date(today.getFullYear(), today.getMonth(), today.getDate())) d = new Date(today.getFullYear() + 1, md[0] - 1, md[1]);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // ===== 自動で入れた文の記録（書きかえられた欄は上書きしない） =====
+        let autoVals = {};   // 欄の id → 自動で入れた文
+        function setAuto(id, v) {
+            setInputValue(id, v);
+            autoVals[id] = v || '';
+        }
+        function isAuto(id) {
+            const e = document.getElementById(id);
+            if (!e) return false;
+            return e.value === '' || e.value === (autoVals[id] || '');
+        }
+
+        // ===== 予定の案をつくる =====
+        // 文の部品（ここを書きかえると、出てくる文が変わります）
+        const PLAN_WORDS = {
+            scene: { 1: '雪景色', 2: '梅の花', 3: '春の訪れ', 4: '桜', 5: '新緑', 6: 'あじさい', 7: '夏の青空', 8: '夏の景色', 9: '初秋の景色', 10: '秋晴れの景色', 11: '紅葉', 12: '冬の澄んだ空' },
+            food: {
+                spring: ['山菜や春野菜の料理', 'たけのこ料理'],
+                summer: ['冷たいおそば', '夏野菜の料理'],
+                autumn: ['きのこや新米の料理', '秋の味覚'],
+                winter: ['あたたかい鍋料理', '湯豆腐やおでん']
+            },
+            trans: {
+                '新幹線・特急電車': { go: '新幹線や特急に乗って', back: '特急や新幹線で', move: '電車やバス' },
+                'ドライブ・レンタカー': { go: '車で（とちゅうのサービスエリアで休けいしながら）', back: '車で', move: '車' },
+                '飛行機＋現地バス': { go: '飛行機とバスで', back: 'バスで空港へ向かい、飛行機で', move: 'バス' },
+                'ローカル線・徒歩散策': { go: 'ふつうの電車にゆられて', back: 'ふつうの電車で', move: '電車と歩き' }
+            }
+        };
+        // ===== 「だれと行く旅？」ごとの予定の中身 =====
+        // prefer: 近くの見どころから優先して選ぶもの（写真も予定もこれに合わせて変わる）
+        // {food} は季節の料理に置きかわる
+        const PLAN_STYLE = {
+            '祖父母と孫の旅': {
+                who: '孫といっしょに',
+                prefer: /(動物園|水族館|公園|博物館|科学館|牧場|遊園地|城|城跡)$/,
+                lunch: ['子どもも食べやすいメニューのあるお店でお昼ごはん', '孫の好きなものが選べるお店でお昼ごはん'],
+                hotel: ['和室のお宿にチェックイン。孫といっしょに温泉に入り、{food}の夕ごはん', '家族風呂のあるお宿へ。孫とゆっくり温泉、夕ごはんは{food}'],
+                plus: '孫といっしょに楽しめる体験（手作り体験など）も',
+                end: '孫といっしょに過ごした旅をふりかえりながら',
+                memo: '孫の好きなおやつ、孫の着がえ'
+            },
+            '三世代旅': {
+                who: '家族三世代で',
+                prefer: /(公園|庭園|神社|神宮|大社|水族館|動物園|博物館|城|城跡)$/,
+                lunch: ['座敷や個室のあるお店で、家族みんなでお昼ごはん', 'みんなで取り分けられる料理のお店でお昼ごはん'],
+                hotel: ['広い和室のお宿にチェックイン。{food}の夕ごはんを家族みんなで', '大きな部屋のお宿へ。温泉のあと、家族そろって{food}の夕ごはん'],
+                plus: '家族みんなで記念写真も',
+                end: '家族三世代の思い出を話しながら',
+                memo: '家族の集合写真用のカメラ、子どもの着がえ'
+            },
+            '夫婦・カップル旅': {
+                who: 'ふたりで',
+                prefer: /(庭園|美術館|寺|院|茶屋街|通り|橋|湖|滝|海岸)$/,
+                lunch: ['落ち着いたお店で{food}のお昼ごはん', '景色のよいお店で、ふたりでお昼ごはん'],
+                hotel: ['お部屋にお風呂のあるお宿にチェックイン。{food}の夕ごはんをゆっくり', '静かなお宿へ。温泉のあと、{food}の夕ごはんをふたりで'],
+                plus: '夕暮れの景色をふたりで散歩',
+                end: 'ふたりで過ごした旅をふりかえりながら',
+                memo: ''
+            },
+            'のんびり一人旅': {
+                who: 'ひとりで',
+                prefer: /(寺|院|美術館|博物館|資料館|記念館|庭園|神社)$/,
+                lunch: ['ひとりでも入りやすいお店で{food}のお昼ごはん', 'カウンターのあるお店で、名物をひとりでゆっくり'],
+                hotel: ['ひとり泊ができるお宿にチェックイン。温泉と{food}の夕ごはんで、自分の時間をゆっくり', '小さなお宿へ。温泉につかって、{food}の夕ごはん'],
+                plus: '気になったお店にふらっと立ち寄る',
+                end: 'ひとり旅の思い出をふりかえりながら',
+                memo: '読みたい本、お宿の連絡先を家族に伝えておく'
+            },
+            '女子旅・友人旅': {
+                who: '友だちと',
+                prefer: /(茶屋街|通り|商店街|市場|横丁|美術館|庭園|神社)$/,
+                lunch: ['名物を食べくらべしながらお昼ごはん', '人気のお店で、友だちとお昼ごはん'],
+                hotel: ['お宿にチェックイン。温泉のあとは{food}の夕ごはんで、おしゃべり', '温泉のあるお宿へ。{food}の夕ごはんを囲んで、ゆっくりおしゃべり'],
+                plus: '名物の食べ歩きも',
+                end: 'みんなで撮った写真を見せ合いながら',
+                memo: 'みんなで分けるおやつ'
+            },
+            'ファミリー旅行': {
+                who: '家族で',
+                prefer: /(動物園|水族館|公園|博物館|科学館|牧場|遊園地|城|城跡)$/,
+                lunch: ['子どもも食べやすいメニューのあるお店でお昼ごはん', '家族で入りやすいお店でお昼ごはん'],
+                hotel: ['家族で泊まれるお宿にチェックイン。温泉と{food}の夕ごはん', '和室のお宿へ。家族そろって{food}の夕ごはん'],
+                plus: '子どもが楽しめる体験も',
+                end: '家族で過ごした旅をふりかえりながら',
+                memo: '子どもの着がえ'
+            }
+        };
+        function planStyle() {
+            return PLAN_STYLE[getInputValue('travelStyle')] || PLAN_STYLE['夫婦・カップル旅'];
+        }
+
+        // 予定の枠と写真の組み合わせ（この予定の見どころの写真を、その横に出す）
+        const PHOTO_FOR_SLOT = { d1_morning: 'd1Img1', d1_afternoon: 'd1Img2', d2_morning: 'd2Img1', d2_afternoon: 'd2Img2' };
+
+        let planSeed = 0;
+        let planAuto = false;   // この行き先で、自動の予定づくりを使っているか
+        let planTimer = null;
+
+        function destShort(dest) {
+            const t = dest.split(/[\s・、]+/).filter(Boolean);
+            return t.length ? t[t.length - 1] : dest;
+        }
+
+        // 写真に出ている見どころの名前（Wikipedia のとき）。なければ一般的な言い方
+        function planSpots(dest) {
+            const short = destShort(dest);
+            const wikiOn = photoMeta.source === 'wiki' && photoMeta.presetDest === dest;
+            const generic = [`${short}の名所`, `${short}の町なみ`, '景色のよいところ', `${short}の古いお寺や神社`];
+            const spots = {};
+            Object.keys(PHOTO_FOR_SLOT).forEach((slot, i) => {
+                const cap = wikiOn ? photoMeta.captions[PHOTO_FOR_SLOT[slot]] : '';
+                spots[slot] = cap || generic[(i + planSeed) % generic.length];
+            });
+            // 歩く量が多いときに足す、もう1か所
+            let extra = '';
+            if (wikiOn && wikiPool && wikiPool.query === dest) {
+                const used = new Set(Object.values(spots));
+                const more = wikiPool.nearby.map(n => n.caption).filter(c => !used.has(c) && !WIKI_AREA.test(c));
+                extra = more[planSeed % Math.max(1, more.length)] || '';
+            }
+            return { spots, extra: extra || `${short}の町なみ` };
+        }
+
+        function buildPlan() {
+            const dest = getInputValue('destination');
+            const origin = getInputValue('origin');
+            const style = getInputValue('travelStyle');
+            const T = PLAN_WORDS.trans[getInputValue('transportation')] || PLAN_WORDS.trans['新幹線・特急電車'];
+            const walk = getInputValue('paceWalk');
+            const rest = getInputValue('paceRest');
+            const stairs = getInputValue('paceStairs');
+            const month = travelMonth();
+            const season = seasonOfMonth(month);
+            const scene = PLAN_WORDS.scene[month];
+            const foods = PLAN_WORDS.food[season];
+            const P = planStyle();
+            const who = P.who;
+            const withFood = (t, f) => t.replace('{food}', f);
+            const short = destShort(dest);
+            const pick = (arr, i) => arr[(planSeed + i) % arr.length];
+            const { spots, extra } = planSpots(dest);
+            // 町の名前（〇〇町 など）は「町なみを散歩」にする
+            const place = s => WIKI_AREA.test(s) ? `${s}の町なみ` : s;
+            const goTo = s => walk === '少なめ' ? `タクシーで${place(s)}へ` : walk === 'たっぷり' ? `歩いて${place(s)}へ` : `${T.move}で${place(s)}へ`;
+            const see = s => walk === '少なめ' ? `${place(s)}をゆっくり見学（移動はタクシーで）` : walk === 'たっぷり' ? `${place(s)}を歩いてめぐる` : `${place(s)}を見学`;
+            const restNote = rest === 'こまめに' ? '（とちゅうでお茶を飲んでひと休み）' : rest === 'ときどき' ? '（ときどきベンチでひと休み）' : '';
+            const stairNote = stairs === 'なるべく少なく' ? '（階段や坂の少ない道を選ぶ）' : '';
+            const from = origin ? `${origin}から` : '';
+
+            const plan = {
+                d1_morning: pick([
+                    `${from}${T.go}${short}へ。着いたら${goTo(spots.d1_morning)}${stairNote}`,
+                    `${T.go}${short}へ出発。まずは${see(spots.d1_morning)}${stairNote}`
+                ], 0),
+                d1_lunch: withFood(pick(P.lunch, 1), foods[0]),
+                d1_afternoon: `${see(spots.d1_afternoon)}` + (walk === 'たっぷり' ? `。そのあと${place(extra)}も歩いてめぐる` : `。${P.plus}`) + restNote,
+                d1_hotel: withFood(pick(P.hotel, 2), foods[1]) + (stairs === 'なるべく少なく' ? '（エレベーターのあるお宿）' : ''),
+                d2_morning: `朝ごはんのあと、${goTo(spots.d2_morning)}。${scene}を楽しむ`,
+                d2_lunch: withFood(pick(P.lunch, 2), foods[0]),
+                d2_afternoon: `${see(spots.d2_afternoon)}。帰る前にお土産さがし` + restNote,
+                d2_return: `${T.back}帰り道へ。${P.end}`
+            };
+            // かっこが続くとき（…）（…）は、ひとつにまとめる
+            Object.keys(plan).forEach(k => { plan[k] = plan[k].replace(/）（/g, '、'); });
+            const tagline = `${scene}の${short}を、${who || 'ゆっくり'}${who ? 'ゆっくり' : ''}楽しむ旅`;
+            const memo = [
+                { spring: '朝晩の羽織るもの', summer: '帽子と飲み物', autumn: '朝晩の上着', winter: '手袋とすべりにくい靴' }[season],
+                walk === '少なめ' ? 'タクシー会社の電話番号をひかえておく' : '歩きやすい靴',
+                rest === 'こまめに' ? '休める場所（喫茶店・ベンチ）を先に調べておく' : '',
+                stairs === 'なるべく少なく' ? '駅やお宿のエレベーターの場所を先に確かめておく' : '',
+                P.memo
+            ].filter(Boolean).join('、');
+            return { plan, tagline, memo };
+        }
+
+        // mode: 'keep' = 書きかえた欄は残す ／ 'all' = 全部つくり直す
+        function makePlan(mode, quiet) {
+            const dest = getInputValue('destination');
+            if (!dest) return;
+            if (mode === 'all' && !quiet && !confirm('書きかえた予定も、すべて新しい案に置きかわります。\n（ひとことの欄は消えません）\nよろしいですか？')) return;
+            const { plan, tagline, memo } = buildPlan();
+            let kept = 0;
+            SLOTS.forEach(s => {
+                if (mode === 'all' || isAuto(s.key)) setAuto(s.key, plan[s.key]);
+                else kept++;
+                // 見本などで自動で入っていた「ひとこと」は、別の場所のことなので消す（自分で書いたものは残す）
+                const nk = `${s.key}_note`;
+                const nv = document.getElementById(nk).value;
+                if (nv && nv === (autoVals[nk] || '')) setAuto(nk, '');
+            });
+            if (mode === 'all' || isAuto('tagline')) setAuto('tagline', tagline);
+            if (mode === 'all' || isAuto('memo')) setAuto('memo', memo);
+            planAuto = true;
+            updatePlanBox();
+            generateBrochure();
+        }
+
+        // 「ちがう案にする」：言い回しを変え、写真（＝見どころ）も入れかえる
+        async function nextPlan() {
+            planSeed++;
+            const dest = getInputValue('destination');
+            if (photoMeta.source === 'wiki' && photoMeta.presetDest === dest && wikiPool && wikiPool.query === dest && WIKI_SETTINGS.fillSmallPhotos) {
+                await wikiShuffleNearby();   // 写真が変わると、そのあとで予定もつくり直される
+            } else {
+                makePlan('keep', true);
+            }
+        }
+
+        // 条件が変わったら、少し待ってから予定をつくり直す
+        function canAutoPlan() {
+            const dest = getInputValue('destination');
+            if (!dest) return false;
+            const showingPreset = photoMeta.source === 'preset' && dest === photoMeta.presetDest;
+            return planAuto || !showingPreset;
+        }
+        function scheduleAutoPlan() {
+            clearTimeout(planTimer);
+            if (!canAutoPlan()) { updatePlanBox(); return; }
+            planTimer = setTimeout(() => makePlan('keep', true), 600);
+        }
+        // 写真（見どころ）が変わったときに呼ぶ
+        function onPhotosChanged() {
+            if (canAutoPlan()) makePlan('keep', true);
+        }
+
+        function updatePlanBox() {
+            const kept = SLOTS.filter(s => !isAuto(s.key)).length;
+            const dest = getInputValue('destination');
+            const show = (id, on) => { const b = document.getElementById(id); if (b) b.hidden = !on; };
+            const showingPreset = photoMeta.source === 'preset' && dest === photoMeta.presetDest && !planAuto;
+            let text;
+            if (!dest) {
+                text = '行き先を書くと、日付・だれと行く旅・ゆったり度・乗り物に合わせて、予定の案を自動でつくります。';
+            } else if (showingPreset) {
+                text = '見本の旅の予定を表示しています。条件に合わせた案にしたいときは「この条件で予定をつくる」を押してください。';
+            } else {
+                text = '条件に合わせて予定の案をつくりました。気に入らない予定は書きかえてください。書きかえた予定は、条件を変えてもそのまま残ります。';
+                if (kept) text += `（いま ${kept} つの予定を、書きかえたまま残しています）`;
+            }
+            setTextContent('planStatus', text);
+            show('planMake', !!dest && showingPreset);
+            show('planNext', !!dest && !showingPreset);
+            show('planAll', !!dest && !showingPreset && SLOTS.some(s => !isAuto(s.key)));
+        }
+
+        // 自動で入れた予定には「自動」の札をつける
+        function refreshAutoMarks() {
+            SLOTS.forEach(s => {
+                const e = document.getElementById(s.key);
+                if (!e) return;
+                const card = e.closest('.slot-form');
+                if (card) card.classList.toggle('is-auto', !!e.value && isAuto(s.key));
+            });
+        }
+
+        // 見本の旅の読み込み（お名前と「旅へのひとこと」は消さない）
+        function loadPreset(key) {
+            const data = presets[key];
+            if (!data) return;
+
+            setInputValue('origin', data.origin);
+            setInputValue('destination', data.destination);
+            setInputValue('travelStyle', data.style);
+            setInputValue('transportation', data.transport);
+            setInputValue('paceWalk', data.paceWalk || '');
+            setInputValue('paceRest', data.paceRest || '');
+            setInputValue('paceStairs', data.paceStairs || '');
+
+            // 日付：見本の季節のいちばん近い日（季節は日付から決まる）
+            setInputValue('startDate', nextDateForSeason(data.season));
+            autoFillEndDate();
+
+            // 見本の文は「自動で入れた文」として扱う（条件を変えると新しい案に置きかわる）
+            autoVals = {};
+            planAuto = false;
+            planSeed = 0;
+            clearTimeout(planTimer);
+            setAuto('tagline', data.tagline);
+            const notes = data.notes || {};
+            SLOTS.forEach(s => {
+                setAuto(s.key, data[s.key]);
+                setAuto(`${s.key}_note`, notes[s.key] || '');
+            });
+            setAuto('memo', data.memo);
+
+            // 見本の写真（行き先が見本のままのときだけ表示される）
+            setPhoto('mainHeroImg', data.heroImg);
+            ['d1Img1', 'd1Img2', 'd2Img1', 'd2Img2'].forEach(id => setPhoto(id, data[id]));
+            photoMeta = { source: 'preset', presetDest: data.destination, captions: Object.assign({}, data.captions), credits: {}, intro: null, wikiOff: '' };
+            ++wikiToken; clearTimeout(wikiTimer); wikiPool = null;
+            setWikiStatus('idle', '');
+
+            generateBrochure();
+        }
+
+        // パンフレットの予定カードを作る
+        function renderBrochureSlots() {
+            [1, 2].forEach(day => {
+                const box = document.getElementById(`outDay${day}Slots`);
+                if (!box) return;
+                box.replaceChildren();
+                SLOTS.filter(s => s.day === day).forEach(s => {
+                    const text = getInputValue(s.key);
+                    const note = getInputValue(`${s.key}_note`);
+
+                    const card = el('div', 'b-slot');
+                    const top = el('div', 'b-slot-top');
+                    top.appendChild(el('span', `b-chip th-chip${day}`, s.label));
+                    card.appendChild(top);
+                    card.appendChild(el('p', text ? 'b-plan' : 'b-plan text-slate-500', text || '（これから決めます）'));
+                    if (note) {
+                        const n = el('p', 'b-note');
+                        n.append(el('i', 'fa-solid fa-comment-dots mr-1 text-slate-500'), note);
+                        card.appendChild(n);
+                    }
+                    box.appendChild(card);
+                });
+            });
+        }
+
+        // 旅へのひとこと・作った人
+        function renderBrochureVoices() {
+            const msg = getInputValue('message');
+            setTextContent('outMessage', msg);
+            document.getElementById('outMessagesBox').hidden = !msg;
+
+            const name = getInputValue('creatorName');
+            setTextContent('outCreators', name || '（お名前）');
+            document.getElementById('outCreators').parentNode.classList.toggle('creators-empty', !name);
+        }
+
+        // ゆったり度の札（選んだものだけ表示）
+        function renderPace() {
+            const box = document.getElementById('outPace');
+            box.replaceChildren();
+            const items = [
+                ['paceWalk', 'fa-person-walking', '歩く量'],
+                ['paceRest', 'fa-mug-hot', '休けい'],
+                ['paceStairs', 'fa-stairs', '階段・坂道']
+            ];
+            items.forEach(([id, icon, label]) => {
+                const v = getInputValue(id);
+                if (!v) return;
+                const chip = el('span', 'b-pace');
+                chip.append(el('i', `fa-solid ${icon}`), ` ${label}：`, el('b', null, v));
+                box.appendChild(chip);
+            });
+            if (box.children.length) {
+                box.prepend(el('span', 'font-bold th-memo-title', 'ゆったり度'));
+                box.hidden = false;
+            } else {
+                box.hidden = true;
+            }
+        }
+
+        // 書いた文章が全部見えるように、入力欄の高さを中身に合わせる
+        function fitTextareas() {
+            document.querySelectorAll('textarea.f-input').forEach(t => {
+                t.style.height = 'auto';
+                t.style.height = (t.scrollHeight + 4) + 'px';
+            });
+        }
+
+        // パンフレットのUI更新
+        function generateBrochure() {
+            try {
+                updateSeason();
+                const origin = getInputValue('origin', '出発地');
+                const dest = getInputValue('destination', '目的地');
+                const season = getInputValue('season', 'spring');
+                const style = getInputValue('travelStyle', '夫婦・カップル旅');
+                const transport = getInputValue('transportation', '新幹線・電車');
+                const tagline = getInputValue('tagline', '心おどる、すてきなひとときを過ごす旅');
+
+                const startDate = getInputValue('startDate');
+                const endDate = getInputValue('endDate');
+                const formattedDateText = formatTravelDates(startDate, endDate);
+
+                const memo = getInputValue('memo');
+
+                // DOMへの反映（すべて textContent）
+                setTextContent('outDestination', dest);
+                setTextContent('outTagline', tagline);
+                setTextContent('outRoute', `${origin} 発 → ${dest}`);
+                setTextContent('outDate', formattedDateText);
+                setTextContent('outTransport', transport);
+                const tIcon = document.getElementById('outTransportIcon');
+                if (tIcon) tIcon.className = `fa-solid ${transportIcons[transport] || 'fa-bus-simple'} th-icon`;
+                setTextContent('outStyle', style);
+
+                renderBrochureSlots();
+                renderBrochureVoices();
+                renderPace();
+                updatePhotos();
+                fitTextareas();
+                refreshAutoMarks();
+                updatePlanBox();
+
+                setTextContent('outMemo', memo);
+                document.getElementById('outMemoBox').hidden = !memo;
+
+                // 季節バッジの更新
+                const badgeElem = document.getElementById('headerSeasonBadge');
+                const config = seasonConfig[season] || seasonConfig.spring;
+                if (badgeElem) badgeElem.textContent = config.badge;
+
+                // 季節の配色を切り替え
+                const brochure = document.getElementById('brochure');
+                if (brochure) {
+                    brochure.classList.remove('season-spring', 'season-summer', 'season-autumn', 'season-winter');
+                    brochure.classList.add(seasonConfig[season] ? `season-${season}` : 'season-spring');
+                }
+
+                scheduleSave();
+
+            } catch (err) {
+                console.error('パンフレット生成中にエラーが発生しました:', err);
+            }
+        }
+
+        // ===== 音声入力（Web Speech API。使えないブラウザではボタンを出さない） =====
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let activeVoice = null; // { rec, field, btn }
+
+        function attachVoice(root) {
+            if (!SpeechRec) return;
+            (root || document).querySelectorAll('[data-voice]').forEach(field => {
+                if (field.dataset.voiceReady) return;
+                field.dataset.voiceReady = '1';
+                const wrap = el('div', 'voice-wrap');
+                field.parentNode.insertBefore(wrap, field);
+                wrap.appendChild(field);
+                const btn = el('button', 'btn-icon btn-mic');
+                btn.type = 'button';
+                btn.title = '声で入力する';
+                btn.setAttribute('aria-label', '声で入力する');
+                btn.setAttribute('aria-pressed', 'false');
+                btn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                btn.addEventListener('click', () => toggleVoice(field, btn));
+                wrap.appendChild(btn);
+            });
+        }
+
+        function stopVoice() {
+            if (activeVoice) activeVoice.rec.stop();
+        }
+
+        function toggleVoice(field, btn) {
+            if (activeVoice) {
+                const same = activeVoice.field === field;
+                stopVoice();
+                if (same) return;
+            }
+            const rec = new SpeechRec();
+            rec.lang = 'ja-JP';
+            rec.interimResults = true;
+            rec.continuous = false;
+            const base = field.value;
+            rec.onresult = e => {
+                let text = '';
+                for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+                field.value = base + text;
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            rec.onerror = e => {
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                    alert('マイクが使えません。ブラウザの設定で、マイクを「許可」にしてください。');
+                } else if (e.error === 'no-speech') {
+                    // 何も聞こえなかったときは静かに止める
+                } else if (e.error === 'network') {
+                    alert('声の入力には、インターネットへの接続が必要です。');
+                }
+            };
+            rec.onend = () => {
+                btn.classList.remove('listening');
+                btn.setAttribute('aria-pressed', 'false');
+                btn.title = '声で入力する';
+                if (activeVoice && activeVoice.rec === rec) activeVoice = null;
+            };
+            activeVoice = { rec, field, btn };
+            btn.classList.add('listening');
+            btn.setAttribute('aria-pressed', 'true');
+            btn.title = '聞いています（もう一度押すと止まります）';
+            try {
+                rec.start();
+            } catch (err) {
+                rec.onend();
+            }
+        }
+
+        // ===== 印刷：A4一枚に収める =====
+        // A4縦(297mm) − 上下の余白(8mm×2) を 96dpi の px に換算
+        const A4_PRINTABLE_HEIGHT_PX = (297 - 16) * 96 / 25.4;
+
+        function preparePrint() {
+            const brochure = document.getElementById('brochure');
+            stopVoice();
+            brochure.style.zoom = '';
+            document.documentElement.classList.add('print-mode');
+            const h = brochure.getBoundingClientRect().height;
+            const scale = Math.min(1, (A4_PRINTABLE_HEIGHT_PX - 6) / h);
+            if (scale < 1) brochure.style.zoom = scale.toFixed(3);
+        }
+
+        function finishPrint() {
+            document.documentElement.classList.remove('print-mode');
+            document.getElementById('brochure').style.zoom = '';
+        }
+
+        function printBrochure() {
+            generateBrochure();
+            window.print(); // beforeprint で preparePrint が呼ばれる
+        }
+
+        window.addEventListener('beforeprint', preparePrint);
+        window.addEventListener('afterprint', finishPrint);
+        // beforeprint に対応しないブラウザ向けの予備
+        if (window.matchMedia) {
+            const mq = window.matchMedia('print');
+            const onChange = e => { if (e.matches) preparePrint(); else finishPrint(); };
+            if (mq.addEventListener) mq.addEventListener('change', onChange);
+            else if (mq.addListener) mq.addListener(onChange);
+        }
+
+        // ===== 保存と引き継ぎ（localStorage への自動保存 ＋ JSON ファイル） =====
+        const STORAGE_KEY = 'brochure-maker:plan';
+        const SAVE_FORMAT = 'brochure-maker';
+        const SAVE_VERSION = 5;
+        const BASIC_FIELDS = ['origin', 'destination', 'startDate', 'endDate', 'season', 'travelStyle', 'transportation', 'paceWalk', 'paceRest', 'paceStairs', 'tagline', 'memo', 'message', 'creatorName'];
+        const IMAGE_IDS = ['mainHeroImg', 'd1Img1', 'd1Img2', 'd2Img1', 'd2Img2'];
+        let saveTimer = null;
+        let restoring = false;
+
+        function collectState() {
+            const fields = {};
+            BASIC_FIELDS.forEach(id => { const e = document.getElementById(id); if (e) fields[id] = e.value; });
+            const slots = {};
+            SLOTS.forEach(s => {
+                slots[s.key] = {
+                    text: document.getElementById(s.key).value,
+                    note: document.getElementById(`${s.key}_note`).value
+                };
+            });
+            const images = {};
+            IMAGE_IDS.forEach(id => { images[id] = document.getElementById(id).getAttribute('src'); });
+            return {
+                format: SAVE_FORMAT, version: SAVE_VERSION, savedAt: new Date().toISOString(),
+                fields, slots, images, photoMeta, autoVals, planAuto, planSeed
+            };
+        }
+
+        function applyState(st) {
+            if (!st || st.format !== SAVE_FORMAT) throw new Error('このツールの保存ファイルではありません');
+            restoring = true;
+            try {
+                const f = st.fields || {};
+                BASIC_FIELDS.forEach(id => setInputValue(id, f[id]));
+                // 古いファイルや手で書いたファイルで選択肢にない値が来たら、最初の選択肢に戻す
+                ['travelStyle', 'transportation', 'paceWalk', 'paceRest', 'paceStairs'].forEach(id => {
+                    const e = document.getElementById(id);
+                    if (e && e.selectedIndex < 0) e.selectedIndex = 0;
+                });
+                const sl = st.slots || {};
+                SLOTS.forEach(s => {
+                    const v = sl[s.key] || {};
+                    setInputValue(s.key, v.text);
+                    setInputValue(`${s.key}_note`, v.note);
+                });
+                const im = st.images || {};
+                IMAGE_IDS.forEach(id => {
+                    const src = im[id];
+                    // 自分で選んだ写真（data:image）か https の画像だけを受け付ける。それ以外は空にする
+                    const ok = typeof src === 'string' && (/^data:image\//.test(src) || /^https:\/\//.test(src));
+                    setPhoto(id, ok ? src : '');
+                });
+                // 見本の写真をどの行き先で出すか（古い保存ファイルには無い → 見本の写真は出さない）
+                const pm = st.photoMeta || {};
+                const caps = {};
+                Object.keys(DEFAULT_CAPTIONS).forEach(k => {
+                    const c = pm.captions && pm.captions[k];
+                    if (typeof c === 'string' && c.length <= 40) caps[k] = c;
+                });
+                const str = (v, max) => (typeof v === 'string' && v.length <= max) ? v : '';
+                const credits = {};
+                IMAGE_IDS.forEach(k => { const c = str(pm.credits && pm.credits[k], 120); if (c) credits[k] = c; });
+                let intro = null;
+                if (pm.intro && typeof pm.intro === 'object') {
+                    const url = str(pm.intro.url, 500);
+                    intro = {
+                        title: str(pm.intro.title, 60), text: str(pm.intro.text, 400),
+                        url: /^https:\/\/ja\.wikipedia\.org\//.test(url) ? url : 'https://ja.wikipedia.org/'
+                    };
+                }
+                photoMeta = {
+                    source: ['preset', 'wiki'].includes(pm.source) ? pm.source : (pm.presetDest ? 'preset' : ''),
+                    presetDest: str(pm.presetDest, 200), captions: caps, credits, intro, wikiOff: str(pm.wikiOff, 200)
+                };
+                // 自動で入れた文の記録（書きかえた欄を守るため）
+                autoVals = {};
+                const av = (st.autoVals && typeof st.autoVals === 'object') ? st.autoVals : {};
+                [...SLOTS.map(s => s.key), ...SLOTS.map(s => `${s.key}_note`), 'tagline', 'memo'].forEach(k => {
+                    const v = str(av[k], 1000);
+                    if (v) autoVals[k] = v;
+                });
+                planAuto = st.planAuto === true;
+                planSeed = Number.isInteger(st.planSeed) && st.planSeed >= 0 ? st.planSeed : 0;
+                clearTimeout(planTimer);
+                ++wikiToken; clearTimeout(wikiTimer); wikiPool = null;
+                generateBrochure();
+                scheduleWikiSearch();
+            } finally {
+                restoring = false;
+            }
+        }
+
+        function showSaveStatus(text) {
+            setTextContent('saveStatus', text);
+        }
+
+        function saveNow() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState()));
+                const t = new Date();
+                showSaveStatus(`✓ この端末に保存しました（${t.getHours()}時${String(t.getMinutes()).padStart(2, '0')}分）`);
+            } catch (err) {
+                showSaveStatus('この端末には保存できませんでした。「ファイルに保存」を使ってください。');
+            }
+        }
+
+        function scheduleSave() {
+            if (restoring) return;
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveNow, 600);
+        }
+
+        function loadSaved() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return false;
+                applyState(JSON.parse(raw));
+                showSaveStatus('前回の続きを開きました。');
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function exportPlan() {
+            generateBrochure();
+            const st = collectState();
+            const blob = new Blob([JSON.stringify(st, null, 2)], { type: 'application/json' });
+            const names = getInputValue('creatorName');
+            const dest = getInputValue('destination', '旅');
+            const d = new Date();
+            const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+            const fname = `旅のしおり_${dest}${names ? '_' + names : ''}_${stamp}.json`.replace(/[\\/:*?"<>|\s]/g, '');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fname;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            showSaveStatus(`「${fname}」としてファイルに保存しました。`);
+        }
+
+        function importPlan(input) {
+            const file = input.files && input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (!confirm('ファイルの内容を開くと、いま書いている内容は置きかわります。よろしいですか？')) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    applyState(JSON.parse(reader.result));
+                    saveNow();
+                    showSaveStatus(`「${file.name}」を開きました。`);
+                } catch (err) {
+                    alert('このファイルは開けませんでした。\n「ファイルに保存」で作ったファイルを選んでください。');
+                }
+            };
+            reader.onerror = () => alert('ファイルを読み込めませんでした。');
+            reader.readAsText(file);
+        }
+
+        function startBlank() {
+            if (!confirm('白紙にすると、いま書いている内容は消えます。\n（必要なら先に「ファイルに保存」してください）\n白紙にしますか？')) return;
+            applyState({
+                format: SAVE_FORMAT, version: SAVE_VERSION,
+                fields: { travelStyle: '夫婦・カップル旅', transportation: '新幹線・特急電車', creatorName: getInputValue('creatorName') },
+                slots: {}, images: {}
+            });
+            saveNow();
+        }
+
+        // ===== 自分の写真に差し替える（端末の中だけで処理。どこにも送らない） =====
+        const PHOTO_MAX = { mainHeroImg: 1400 }; // 長い辺の最大px（それ以外は 900）
+        let photoTarget = null;
+
+        function setupPhotoButtons() {
+            const input = el('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.className = 'hidden';
+            input.id = 'photoFile';
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                input.value = '';
+                if (file && photoTarget) replacePhoto(photoTarget, file);
+            });
+            document.body.appendChild(input);
+
+            IMAGE_IDS.forEach(id => {
+                const img = document.getElementById(id);
+                const pick = () => { photoTarget = id; input.click(); };
+                // 読み込めない写真は「写真をのせる」枠にする
+                img.addEventListener('error', () => { img.dataset.broken = '1'; updatePhotos(); });
+                img.addEventListener('load', () => { img.dataset.broken = ''; });
+
+                const btn = el('button', 'no-print photo-btn');
+                btn.type = 'button';
+                btn.innerHTML = '<i class="fa-solid fa-camera"></i> <span>写真を変える</span>';
+                btn.setAttribute('aria-label', id === 'mainHeroImg' ? '表紙の写真' : '写真');
+                btn.addEventListener('click', pick);
+                img.parentNode.appendChild(btn);
+
+                // 写真がないときに出す枠（表紙は季節の色だけ、ほかは押せる枠）
+                if (id !== 'mainHeroImg') {
+                    const ph = el('button', 'ph-box');
+                    ph.type = 'button';
+                    ph.setAttribute('aria-label', '写真をのせる');
+                    ph.innerHTML = '<span class="ph-icon" aria-hidden="true"></span><span class="ph-text"><i class="fa-solid fa-camera mr-1"></i>写真をのせる</span>';
+                    ph.addEventListener('click', pick);
+                    img.parentNode.appendChild(ph);
+                }
+            });
+            updatePhotos();
+        }
+
+        function replacePhoto(id, file) {
+            if (!/^image\//.test(file.type)) {
+                alert('写真（画像）のファイルを選んでください。');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const src = new Image();
+                src.onload = () => {
+                    // 大きな写真はそのままだと保存できないので、縮小してから使う
+                    const max = PHOTO_MAX[id] || 900;
+                    const r = Math.min(1, max / Math.max(src.width, src.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(src.width * r);
+                    canvas.height = Math.round(src.height * r);
+                    canvas.getContext('2d').drawImage(src, 0, 0, canvas.width, canvas.height);
+                    setPhoto(id, canvas.toDataURL('image/jpeg', 0.82));
+                    generateBrochure();
+                };
+                src.onerror = () => alert('この写真は開けませんでした。別の写真を選んでください。');
+                src.src = reader.result;
+            };
+            reader.onerror = () => alert('写真を読み込めませんでした。');
+            reader.readAsDataURL(file);
+        }
+
+        // 見本の旅ボタン：今の内容が置きかわるので確認する
+        function usePreset(key) {
+            if (!confirm('見本の旅を読み込むと、いま書いている予定が置きかわります。\n（お名前と「旅へのひとこと」は残ります）\nよろしいですか？')) return;
+            loadPreset(key);
+        }
+
+        // 初期表示：フォームを組み立てて、前回の続き（なければ箱根の見本）を読み込む
+        window.onload = function() {
+            renderSlotForms();
+            setupFormEvents();
+            attachVoice(document);
+            if (SpeechRec) document.getElementById('voiceHelp').hidden = false;
+            setupPhotoButtons();
+            if (!loadSaved()) loadPreset('hakone');
+            scheduleWikiSearch();
+        };
+    </script>
+</body>
+</html>
